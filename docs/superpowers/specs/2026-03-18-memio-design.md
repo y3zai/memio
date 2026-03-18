@@ -6,6 +6,10 @@ A Python SDK that provides a single, consistent API to access multiple agent mem
 
 Application developers building AI agents who want to swap or compose memory providers without rewriting code.
 
+## Requirements
+
+- Python >= 3.10 (uses PEP 604 `X | Y` union syntax)
+
 ## Design Decisions
 
 | Decision | Choice | Rationale |
@@ -217,17 +221,18 @@ One adapter class per memory type per provider. Adapters from the same provider 
 - `get_all(user_id)` -> `memory.get_all(user_id=user_id)` -> translate to `list[Fact]`
 
 **Zep HistoryStore mapping:**
-- `add(session_id, messages)` -> `client.thread.add_messages(thread_id=session_id, messages=...)` (auto-create thread if needed)
-- `get(session_id, limit)` -> `client.thread.get(thread_id=session_id, limit=limit)` -> translate to `list[Message]`
+- `add(session_id, messages)` -> Zep thread API `add_messages(thread_id=session_id, messages=...)` (auto-create thread if needed)
+- `get(session_id, limit)` -> Zep thread API `get(thread_id=session_id, limit=limit)` -> translate to `list[Message]`
 - `search(session_id, query)` -> `client.graph.search(query=query)` filtered to session -> translate to `list[Message]`
-- `delete(session_id)` -> `client.thread.delete(thread_id=session_id)`
+- `delete(session_id)` -> Zep thread API `delete(thread_id=session_id)`
+- Note: Zep's thread client may require separate instantiation from the main `AsyncZep` client. The adapter should handle this internally.
 
 **Zep FactStore mapping:**
 - `add(content, user_id)` -> `client.graph.add(data=content, user_id=user_id, type="text")` -> translate to `Fact`
 - `search(query, user_id, limit)` -> `client.graph.search(query=query, user_id=user_id, limit=limit)` -> translate edges to `list[Fact]`
 
 **Zep GraphStore mapping:**
-- `add(triples)` -> `client.graph.add_fact_triple(...)` per triple
+- `add(triples)` -> `client.graph.add_fact_triple(...)` per triple. Translation: `Triple.subject` -> `source_node_name`, `Triple.predicate` -> `fact_name` (UPPERCASE_SNAKE_CASE), `Triple.object` -> `target_node_name`, `Triple.metadata` -> `edge_attributes`
 - `search(query, user_id)` -> `client.graph.search(query=query, user_id=user_id)` -> translate to `GraphResult`
 - `delete(entity)` -> delete via node/edge API
 
