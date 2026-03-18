@@ -2247,7 +2247,7 @@ class TestZepFactAdapter:
     async def test_get_all(self):
         mock_edges = [
             _mock_zep_edge("e1", "likes coffee", "LIKES", "n1", "n2"),
-            _mock_zep_edge("e2", "prefers dark mode", "PREFERS", "n1", "n3", uuid_="e2"),
+            _mock_zep_edge("e2", "prefers dark mode", "PREFERS", "n1", "n3"),
         ]
         mock_client = MagicMock()
         mock_client.graph = MagicMock()
