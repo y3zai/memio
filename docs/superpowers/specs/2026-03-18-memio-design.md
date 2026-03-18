@@ -55,6 +55,8 @@ class FactStore(Protocol):
                      metadata: dict | None = None) -> Fact: ...
     async def get(self, *, fact_id: str) -> Fact: ...
     async def delete(self, *, fact_id: str) -> None: ...
+    async def delete_all(self, *, user_id: str | None = None,
+                         agent_id: str | None = None) -> None: ...
     async def get_all(self, *, user_id: str | None = None,
                       agent_id: str | None = None, limit: int = 100) -> list[Fact]: ...
 ```
@@ -94,10 +96,13 @@ class DocumentStore(Protocol):
 class GraphStore(Protocol):
     async def add(self, *, triples: list[Triple]) -> None: ...
     async def get(self, *, entity: str) -> GraphResult: ...
+    async def get_all(self, *, user_id: str | None = None,
+                      limit: int = 100) -> GraphResult: ...
     async def search(self, *, query: str, user_id: str | None = None,
                      limit: int = 10) -> GraphResult: ...
     async def delete(self, *, entity: str | None = None,
                      triple_id: str | None = None) -> None: ...
+    async def delete_all(self, *, user_id: str | None = None) -> None: ...
 ```
 
 ## Data Models
@@ -222,7 +227,17 @@ One adapter class per memory type per provider. Adapters from the same provider 
 - `search(query, user_id, limit)` -> `memory.search(query=query, user_id=user_id, limit=limit)` -> translate `MemoryItem` list to `list[Fact]`
 - `update(fact_id, content)` -> `memory.update(memory_id=fact_id, data=content)` -> translate to `Fact`
 - `delete(fact_id)` -> `memory.delete(memory_id=fact_id)`
+- `delete_all(user_id)` -> `memory.delete_all(user_id=user_id)`
 - `get_all(user_id)` -> `memory.get_all(user_id=user_id)` -> translate to `list[Fact]`
+
+**mem0 GraphStore mapping:**
+- `add(triples)` -> `graph.add(data=..., filters={user_id: ...})` — mem0's graph LLM extracts entities from text, so triples are serialized to natural language
+- `get(entity)` -> `graph.get_all(filters={user_id: ...})` filtered by entity name -> translate to `GraphResult`
+- `get_all(user_id)` -> `graph.get_all(filters={user_id: ...})` -> translate to `GraphResult`
+- `search(query, user_id)` -> `graph.search(query=query, filters={user_id: ...})` -> translate to `GraphResult`
+- `delete(entity)` -> not directly supported; `delete_all` is the available granularity
+- `delete_all(user_id)` -> `graph.delete_all(filters={user_id: ...})`
+- Note: mem0's graph store does not support individual entity/relationship updates or deletes. The `add()` method uses LLM-driven merge logic to implicitly update existing relationships.
 
 **Zep HistoryStore mapping:**
 - `add(session_id, messages)` -> Zep thread API `add_messages(thread_id=session_id, messages=...)` (auto-create thread if needed)
@@ -237,8 +252,11 @@ One adapter class per memory type per provider. Adapters from the same provider 
 
 **Zep GraphStore mapping:**
 - `add(triples)` -> `client.graph.add_fact_triple(...)` per triple. Translation: `Triple.subject` -> `source_node_name`, `Triple.predicate` -> `fact_name` (UPPERCASE_SNAKE_CASE), `Triple.object` -> `target_node_name`, `Triple.metadata` -> `edge_attributes`
+- `get(entity)` -> `client.graph.node.get_by_user_id(...)` filtered by entity name -> translate to `GraphResult`
+- `get_all(user_id)` -> `client.graph.node.get_by_user_id(user_id)` + `client.graph.edge.get_by_user_id(user_id)` -> translate to `GraphResult`
 - `search(query, user_id)` -> `client.graph.search(query=query, user_id=user_id)` -> translate to `GraphResult`
 - `delete(entity)` -> delete via node/edge API
+- `delete_all(user_id)` -> `client.graph.delete(graph_id)` or delete user's graph
 
 **Chroma DocumentStore mapping:**
 - `add(content, doc_id, metadata)` -> `collection.add(ids=[doc_id], documents=[content], metadatas=[metadata])`
