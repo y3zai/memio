@@ -382,3 +382,44 @@ Same pattern for HistoryStore, DocumentStore, GraphStore. New providers run thes
 **2. Adapter unit tests** — mock provider SDKs, test translation logic (memio calls -> provider calls, provider responses -> memio data models).
 
 **3. Integration tests** — hit real provider APIs. Gated behind `pytest -m integration` and environment variables for API keys.
+
+## Future Extensibility (not in v0.1)
+
+The protocol-based architecture naturally supports two future directions:
+
+### Custom/Native Provider Adapters
+
+Third parties can implement adapters for any backend without forking memio. Because protocols use structural subtyping (duck typing), any class that implements the right method signatures works — no base class inheritance or registration required.
+
+```python
+# Example: a community-built neo4j adapter (e.g., published as memio-neo4j)
+class Neo4jGraphAdapter:
+    def __init__(self, uri: str, user: str, password: str):
+        self.driver = neo4j.AsyncDriver(uri, auth=(user, password))
+
+    async def add(self, *, triples: list[Triple]) -> None: ...
+    async def get(self, *, entity: str) -> GraphResult: ...
+    async def get_all(self, *, user_id: str | None = None, limit: int = 100) -> GraphResult: ...
+    async def search(self, *, query: str, user_id: str | None = None, limit: int = 10) -> GraphResult: ...
+    async def delete(self, *, entity: str | None = None, triple_id: str | None = None) -> None: ...
+    async def delete_all(self, *, user_id: str | None = None) -> None: ...
+
+# Plug it in — no changes to memio core
+m = Memio(graph=Neo4jGraphAdapter(uri="bolt://localhost:7687", ...))
+```
+
+### Hosted/Commercial Offering (MemioCloud)
+
+A future managed service where users get one API key and memio handles provider selection, hosting, and infrastructure. This is a thin wrapper that composes cloud-hosted adapters behind the same API surface:
+
+```python
+# Cloud: one API key, same interface
+m = MemioCloud(api_key="mk-...")
+await m.facts.add(content="User prefers dark mode", user_id="alice")
+
+# Identical API to self-hosted:
+m = Memio(facts=Mem0FactAdapter(...), history=ZepHistoryAdapter(...))
+await m.facts.add(content="User prefers dark mode", user_id="alice")
+```
+
+`MemioCloud` internally instantiates cloud-backed adapters that implement the same protocols. No changes to the core library, protocols, or data models are needed — the commercial layer sits on top.
