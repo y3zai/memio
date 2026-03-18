@@ -53,6 +53,7 @@ class FactStore(Protocol):
                      filters: dict | None = None) -> list[Fact]: ...
     async def update(self, *, fact_id: str, content: str,
                      metadata: dict | None = None) -> Fact: ...
+    async def get(self, *, fact_id: str) -> Fact: ...
     async def delete(self, *, fact_id: str) -> None: ...
     async def get_all(self, *, user_id: str | None = None,
                       agent_id: str | None = None, limit: int = 100) -> list[Fact]: ...
@@ -78,6 +79,7 @@ class HistoryStore(Protocol):
 class DocumentStore(Protocol):
     async def add(self, *, content: str, doc_id: str | None = None,
                   metadata: dict | None = None) -> Document: ...
+    async def get(self, *, doc_id: str) -> Document: ...
     async def search(self, *, query: str, limit: int = 10,
                      filters: dict | None = None) -> list[Document]: ...
     async def update(self, *, doc_id: str, content: str,
@@ -91,6 +93,7 @@ class DocumentStore(Protocol):
 @runtime_checkable
 class GraphStore(Protocol):
     async def add(self, *, triples: list[Triple]) -> None: ...
+    async def get(self, *, entity: str) -> GraphResult: ...
     async def search(self, *, query: str, user_id: str | None = None,
                      limit: int = 10) -> GraphResult: ...
     async def delete(self, *, entity: str | None = None,
@@ -215,6 +218,7 @@ One adapter class per memory type per provider. Adapters from the same provider 
 
 **mem0 FactStore mapping:**
 - `add(content, user_id)` -> `memory.add(messages=content, user_id=user_id)` -> translate response to `Fact`
+- `get(fact_id)` -> `memory.get(memory_id=fact_id)` -> translate `MemoryItem` to `Fact`
 - `search(query, user_id, limit)` -> `memory.search(query=query, user_id=user_id, limit=limit)` -> translate `MemoryItem` list to `list[Fact]`
 - `update(fact_id, content)` -> `memory.update(memory_id=fact_id, data=content)` -> translate to `Fact`
 - `delete(fact_id)` -> `memory.delete(memory_id=fact_id)`
@@ -238,6 +242,7 @@ One adapter class per memory type per provider. Adapters from the same provider 
 
 **Chroma DocumentStore mapping:**
 - `add(content, doc_id, metadata)` -> `collection.add(ids=[doc_id], documents=[content], metadatas=[metadata])`
+- `get(doc_id)` -> `collection.get(ids=[doc_id])` -> translate to `Document`
 - `search(query, limit, filters)` -> `collection.query(query_texts=[query], n_results=limit, where=filters)` -> translate to `list[Document]`
 - `update(doc_id, content, metadata)` -> `collection.update(ids=[doc_id], documents=[content], metadatas=[metadata])`
 - `delete(doc_id)` -> `collection.delete(ids=[doc_id])`
@@ -338,6 +343,10 @@ async def fact_store_conformance(store: FactStore):
     fact = await store.add(content="likes coffee", user_id="test-user")
     assert fact.id is not None
     assert fact.content == "likes coffee"
+
+    retrieved = await store.get(fact_id=fact.id)
+    assert retrieved.id == fact.id
+    assert retrieved.content == "likes coffee"
 
     results = await store.search(query="coffee", user_id="test-user")
     assert any(f.id == fact.id for f in results)
