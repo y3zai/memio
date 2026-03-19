@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "memio"
+version = "0.1.0"
+description = "Unified memory gateway for AI agents"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = []
+
+[project.optional-dependencies]
+mem0 = ["mem0ai"]
+zep = ["zep-cloud"]
+chroma = ["chromadb"]
+all = ["mem0ai", "zep-cloud", "chromadb"]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "pytest-mock>=3.12"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    "integration: requires real provider API keys",
+]
