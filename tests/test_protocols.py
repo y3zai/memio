@@ -1,0 +1,74 @@
+from memio.protocols import FactStore, HistoryStore, DocumentStore, GraphStore
+from memio.models import Fact, Message, Document, Triple, GraphResult
+
+
+class FakeFactStore:
+    async def add(self, *, content: str, user_id: str | None = None,
+                  agent_id: str | None = None, metadata: dict | None = None) -> Fact: ...
+    async def search(self, *, query: str, user_id: str | None = None,
+                     agent_id: str | None = None, limit: int = 10,
+                     filters: dict | None = None) -> list[Fact]: ...
+    async def update(self, *, fact_id: str, content: str,
+                     metadata: dict | None = None) -> Fact: ...
+    async def get(self, *, fact_id: str) -> Fact: ...
+    async def delete(self, *, fact_id: str) -> None: ...
+    async def delete_all(self, *, user_id: str | None = None,
+                         agent_id: str | None = None) -> None: ...
+    async def get_all(self, *, user_id: str | None = None,
+                      agent_id: str | None = None, limit: int = 100) -> list[Fact]: ...
+
+
+class FakeHistoryStore:
+    async def add(self, *, session_id: str, messages: list[Message]) -> None: ...
+    async def get(self, *, session_id: str, limit: int = 50,
+                  cursor: str | None = None) -> list[Message]: ...
+    async def search(self, *, session_id: str, query: str,
+                     limit: int = 10) -> list[Message]: ...
+    async def delete(self, *, session_id: str) -> None: ...
+
+
+class FakeDocumentStore:
+    async def add(self, *, content: str, doc_id: str | None = None,
+                  metadata: dict | None = None) -> Document: ...
+    async def get(self, *, doc_id: str) -> Document: ...
+    async def search(self, *, query: str, limit: int = 10,
+                     filters: dict | None = None) -> list[Document]: ...
+    async def update(self, *, doc_id: str, content: str,
+                     metadata: dict | None = None) -> Document: ...
+    async def delete(self, *, doc_id: str) -> None: ...
+
+
+class FakeGraphStore:
+    async def add(self, *, triples: list[Triple], user_id: str | None = None) -> None: ...
+    async def get(self, *, entity: str, user_id: str | None = None) -> GraphResult: ...
+    async def get_all(self, *, user_id: str | None = None,
+                      limit: int = 100) -> GraphResult: ...
+    async def search(self, *, query: str, user_id: str | None = None,
+                     limit: int = 10) -> GraphResult: ...
+    async def delete(self, *, entity: str | None = None,
+                     triple_id: str | None = None) -> None: ...
+    async def delete_all(self, *, user_id: str | None = None) -> None: ...
+
+
+class NotAStore:
+    pass
+
+
+class TestProtocolChecking:
+    def test_fact_store_isinstance(self):
+        assert isinstance(FakeFactStore(), FactStore)
+
+    def test_history_store_isinstance(self):
+        assert isinstance(FakeHistoryStore(), HistoryStore)
+
+    def test_document_store_isinstance(self):
+        assert isinstance(FakeDocumentStore(), DocumentStore)
+
+    def test_graph_store_isinstance(self):
+        assert isinstance(FakeGraphStore(), GraphStore)
+
+    def test_non_conforming_class_fails(self):
+        assert not isinstance(NotAStore(), FactStore)
+        assert not isinstance(NotAStore(), HistoryStore)
+        assert not isinstance(NotAStore(), DocumentStore)
+        assert not isinstance(NotAStore(), GraphStore)
