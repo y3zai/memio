@@ -1,5 +1,9 @@
 # memio
 
+[![PyPI](https://img.shields.io/pypi/v/memio)](https://pypi.org/project/memio/)
+[![Docs](https://img.shields.io/badge/docs-y3z.ai%2Fmemio-blue)](https://y3z.ai/memio/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 Unified memory gateway for AI agents. One interface, multiple memory providers.
 
 memio lets you swap between memory backends (Mem0, Zep, Chroma) without changing your application code. Define what memory capabilities you need — facts, conversation history, documents, knowledge graphs — and plug in any supported provider.
