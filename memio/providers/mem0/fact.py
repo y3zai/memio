@@ -57,6 +57,8 @@ class Mem0FactAdapter:
     async def get(self, *, fact_id: str) -> Fact:
         try:
             result = await self._client.get(fact_id)
+            if result is None:
+                raise ValueError(f"fact {fact_id!r} not found")
             return self._to_fact(result)
         except Exception as e:
             raise ProviderError("mem0", "get", e) from e
