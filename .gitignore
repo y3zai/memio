@@ -4,3 +4,6 @@ __pycache__/
 .superpowers/
 .reference/
 site/
+docs/superpowers/
+docs/specs/
+dist/

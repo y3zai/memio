@@ -25,10 +25,6 @@ theme:
     - content.code.copy
     - search.highlight
 
-exclude_docs: |
-  specs/
-  superpowers/
-
 plugins:
   - search
   - mkdocstrings:
