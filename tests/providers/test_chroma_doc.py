@@ -74,6 +74,35 @@ class TestChromaDocumentAdapter:
         await adapter.delete(doc_id="d1")
         mock_col.delete.assert_called_once_with(ids=["d1"])
 
+    async def test_get_all(self):
+        mock_col = MagicMock()
+        mock_col.get.return_value = {
+            "ids": ["d1", "d2"],
+            "documents": ["doc one", "doc two"],
+            "metadatas": [{"k": "1"}, {"k": "2"}],
+        }
+        adapter = self._make_adapter(mock_col)
+        results = await adapter.get_all(limit=10)
+        assert len(results) == 2
+        assert results[0].id == "d1"
+        assert results[1].content == "doc two"
+
+    async def test_delete_all(self):
+        mock_col = MagicMock()
+        mock_col.get.return_value = {"ids": ["d1", "d2"]}
+        mock_col.delete = MagicMock()
+        adapter = self._make_adapter(mock_col)
+        await adapter.delete_all()
+        mock_col.delete.assert_called_once_with(ids=["d1", "d2"])
+
+    async def test_delete_all_empty(self):
+        mock_col = MagicMock()
+        mock_col.get.return_value = {"ids": []}
+        mock_col.delete = MagicMock()
+        adapter = self._make_adapter(mock_col)
+        await adapter.delete_all()
+        mock_col.delete.assert_not_called()
+
     async def test_provider_error_wrapping(self):
         mock_col = MagicMock()
         mock_col.query.side_effect = RuntimeError("connection lost")

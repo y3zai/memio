@@ -96,7 +96,9 @@ await store.delete_all(user_id="alice")
 await store.add(session_id="s1", messages=[Message(role="user", content="hello")])
 messages = await store.get(session_id="s1", limit=50)
 results = await store.search(session_id="s1", query="hello")
+sessions = await store.get_all(user_id="alice")
 await store.delete(session_id="s1")
+await store.delete_all(user_id="alice")
 ```
 
 ### DocumentStore
@@ -105,8 +107,10 @@ await store.delete(session_id="s1")
 doc = await store.add(content="some text", metadata={"source": "wiki"})
 doc = await store.get(doc_id=doc.id)
 results = await store.search(query="text", limit=10)
+all_docs = await store.get_all(limit=100)
 updated = await store.update(doc_id=doc.id, content="updated text")
 await store.delete(doc_id=doc.id)
+await store.delete_all()
 ```
 
 ### GraphStore
@@ -166,6 +170,12 @@ class MyDocumentStore:
         ...
 
     async def delete(self, *, doc_id):
+        ...
+
+    async def get_all(self, *, limit=100, filters=None):
+        ...
+
+    async def delete_all(self):
         ...
 
 # memio validates the protocol at runtime

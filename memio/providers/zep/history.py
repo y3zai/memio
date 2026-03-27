@@ -108,6 +108,39 @@ class ZepHistoryAdapter:
         except Exception as e:
             raise ProviderError("zep", "delete", e) from e
 
+    async def get_all(
+        self,
+        *,
+        user_id: str | None = None,
+        limit: int = 100,
+    ) -> list[str]:
+        try:
+            if not user_id:
+                return []
+            response = _unwrap(
+                await self._client.user.get_sessions(user_id)
+            )
+            sessions = response if isinstance(response, list) else list(response or [])
+            return [
+                getattr(s, "session_id", None) or getattr(s, "thread_id", None) or str(s)
+                for s in sessions[:limit]
+            ]
+        except Exception as e:
+            if "not found" in str(e).lower() or "404" in str(e):
+                return []
+            raise ProviderError("zep", "get_all", e) from e
+
+    async def delete_all(self, *, user_id: str | None = None) -> None:
+        try:
+            if user_id:
+                try:
+                    await self._client.user.delete(user_id)
+                except Exception as inner:
+                    if "404" not in str(inner) and "not found" not in str(inner).lower():
+                        raise
+        except Exception as e:
+            raise ProviderError("zep", "delete_all", e) from e
+
     @staticmethod
     def _to_message(zep_msg) -> Message:
         timestamp = None

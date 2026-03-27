@@ -30,6 +30,10 @@ class FakeHistoryStore:
         return []
     async def delete(self, *, session_id):
         pass
+    async def get_all(self, *, user_id=None, limit=100):
+        return []
+    async def delete_all(self, *, user_id=None):
+        pass
 
 
 class FakeDocumentStore:
@@ -42,6 +46,10 @@ class FakeDocumentStore:
     async def update(self, *, doc_id, content, metadata=None):
         return Document(id=doc_id, content=content)
     async def delete(self, *, doc_id):
+        pass
+    async def get_all(self, *, limit=100, filters=None):
+        return []
+    async def delete_all(self):
         pass
 
 

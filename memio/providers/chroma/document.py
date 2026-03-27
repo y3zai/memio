@@ -79,3 +79,29 @@ class ChromaDocumentAdapter:
             self._collection.delete(ids=[doc_id])
         except Exception as e:
             raise ProviderError("chroma", "delete", e) from e
+
+    async def get_all(self, *, limit: int = 100,
+                      filters: dict | None = None) -> list[Document]:
+        try:
+            kwargs: dict = {"limit": limit}
+            if filters is not None:
+                kwargs["where"] = filters
+            result = self._collection.get(**kwargs)
+            docs = []
+            for i, doc_id in enumerate(result["ids"]):
+                docs.append(Document(
+                    id=doc_id,
+                    content=result["documents"][i],
+                    metadata=result["metadatas"][i] if result.get("metadatas") else None,
+                ))
+            return docs
+        except Exception as e:
+            raise ProviderError("chroma", "get_all", e) from e
+
+    async def delete_all(self) -> None:
+        try:
+            result = self._collection.get()
+            if result["ids"]:
+                self._collection.delete(ids=result["ids"])
+        except Exception as e:
+            raise ProviderError("chroma", "delete_all", e) from e

@@ -107,6 +107,50 @@ class TestZepHistoryAdapter:
 
         mock_client.thread.delete.assert_called_once_with("s1")
 
+    async def test_get_all(self):
+        mock_sessions = [MagicMock(spec=[]), MagicMock(spec=[])]
+        mock_sessions[0].thread_id = "s1"
+        mock_sessions[1].thread_id = "s2"
+        mock_client = MagicMock()
+        mock_client.user = MagicMock()
+        mock_client.user.get_sessions = AsyncMock(return_value=mock_sessions)
+        adapter = self._make_adapter(mock_client)
+
+        sessions = await adapter.get_all(user_id="u1")
+
+        assert len(sessions) == 2
+        assert "s1" in sessions
+        assert "s2" in sessions
+
+    async def test_get_all_no_user(self):
+        mock_client = MagicMock()
+        adapter = self._make_adapter(mock_client)
+
+        sessions = await adapter.get_all()
+
+        assert sessions == []
+
+    async def test_delete_all(self):
+        mock_client = MagicMock()
+        mock_client.user = MagicMock()
+        mock_client.user.delete = AsyncMock()
+        adapter = self._make_adapter(mock_client)
+
+        await adapter.delete_all(user_id="u1")
+
+        mock_client.user.delete.assert_called_once_with("u1")
+
+    async def test_delete_all_ignores_not_found(self):
+        mock_client = MagicMock()
+        mock_client.user = MagicMock()
+        mock_client.user.delete = AsyncMock(
+            side_effect=RuntimeError("404 not found"),
+        )
+        adapter = self._make_adapter(mock_client)
+
+        # Should not raise
+        await adapter.delete_all(user_id="u1")
+
     async def test_provider_error_wrapping(self):
         mock_client = MagicMock()
         mock_client.thread = MagicMock()
