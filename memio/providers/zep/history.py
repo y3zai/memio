@@ -41,17 +41,11 @@ class ZepHistoryAdapter:
             except Exception:
                 pass  # Thread may already exist
 
-            try:
-                from zep_cloud.types import Message as ZepMessage
-                zep_messages = [
-                    ZepMessage(role=m.role, content=m.content)
-                    for m in messages
-                ]
-            except ImportError:
-                zep_messages = [
-                    {"role": m.role, "content": m.content}
-                    for m in messages
-                ]
+            from zep_cloud.types import Message as ZepMessage
+            zep_messages = [
+                ZepMessage(role=m.role, content=m.content)
+                for m in messages
+            ]
             await self._client.thread.add_messages(
                 thread_id=session_id, messages=zep_messages,
             )
