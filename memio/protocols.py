@@ -7,6 +7,12 @@ from memio.models import Document, Fact, GraphResult, Message, Triple
 
 @runtime_checkable
 class FactStore(Protocol):
+    """Protocol for storing and retrieving structured facts.
+
+    Facts are short pieces of knowledge scoped to a user or agent.
+    Implementations must provide all methods as async.
+    """
+
     async def add(self, *, content: str, user_id: str | None = None,
                   agent_id: str | None = None, metadata: dict | None = None) -> Fact: ...
     async def search(self, *, query: str, user_id: str | None = None,
@@ -24,6 +30,12 @@ class FactStore(Protocol):
 
 @runtime_checkable
 class HistoryStore(Protocol):
+    """Protocol for storing and retrieving conversation history.
+
+    Messages are grouped by session ID. Implementations must provide
+    all methods as async.
+    """
+
     async def add(self, *, session_id: str, messages: list[Message]) -> None: ...
     async def get(self, *, session_id: str, limit: int = 50,
                   cursor: str | None = None) -> list[Message]: ...
@@ -37,6 +49,12 @@ class HistoryStore(Protocol):
 
 @runtime_checkable
 class DocumentStore(Protocol):
+    """Protocol for storing and searching documents.
+
+    Documents support semantic search and optional metadata filtering.
+    Implementations must provide all methods as async.
+    """
+
     async def add(self, *, content: str, doc_id: str | None = None,
                   metadata: dict | None = None) -> Document: ...
     async def get(self, *, doc_id: str) -> Document: ...
@@ -52,6 +70,12 @@ class DocumentStore(Protocol):
 
 @runtime_checkable
 class GraphStore(Protocol):
+    """Protocol for storing and querying knowledge graph triples.
+
+    Triples represent subject-predicate-object relationships.
+    Implementations must provide all methods as async.
+    """
+
     async def add(self, *, triples: list[Triple], user_id: str | None = None) -> None: ...
     async def get(self, *, entity: str, user_id: str | None = None) -> GraphResult: ...
     async def get_all(self, *, user_id: str | None = None,
