@@ -118,12 +118,12 @@ class ZepHistoryAdapter:
             if not user_id:
                 return []
             response = _unwrap(
-                await self._client.user.get_sessions(user_id)
+                await self._client.user.get_threads(user_id)
             )
-            sessions = response if isinstance(response, list) else list(response or [])
+            threads = response if isinstance(response, list) else list(response or [])
             return [
-                getattr(s, "session_id", None) or getattr(s, "thread_id", None) or str(s)
-                for s in sessions[:limit]
+                getattr(t, "thread_id", None) or getattr(t, "uuid_", None) or str(t)
+                for t in threads[:limit]
             ]
         except Exception as e:
             if "not found" in str(e).lower() or "404" in str(e):

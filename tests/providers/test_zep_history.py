@@ -108,12 +108,12 @@ class TestZepHistoryAdapter:
         mock_client.thread.delete.assert_called_once_with("s1")
 
     async def test_get_all(self):
-        mock_sessions = [MagicMock(spec=[]), MagicMock(spec=[])]
-        mock_sessions[0].thread_id = "s1"
-        mock_sessions[1].thread_id = "s2"
+        mock_threads = [MagicMock(spec=[]), MagicMock(spec=[])]
+        mock_threads[0].thread_id = "s1"
+        mock_threads[1].thread_id = "s2"
         mock_client = MagicMock()
         mock_client.user = MagicMock()
-        mock_client.user.get_sessions = AsyncMock(return_value=mock_sessions)
+        mock_client.user.get_threads = AsyncMock(return_value=mock_threads)
         adapter = self._make_adapter(mock_client)
 
         sessions = await adapter.get_all(user_id="u1")
