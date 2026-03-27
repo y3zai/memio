@@ -201,7 +201,7 @@ except MemioError:
 ## Development
 
 ```bash
-git clone https://github.com/DavyMorgan/memio.git
+git clone https://github.com/y3zai/memio.git
 cd memio
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[all,dev]"
