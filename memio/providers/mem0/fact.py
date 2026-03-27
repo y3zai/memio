@@ -37,7 +37,13 @@ class Mem0FactAdapter:
             if metadata:
                 kwargs["metadata"] = metadata
             result = await self._client.add(**kwargs)
-            entry = result["results"][0]
+            entries = result.get("results", [])
+            if not entries:
+                raise ValueError(
+                    "mem0 returned no results — the memory may already exist "
+                    "(deduplicated)"
+                )
+            entry = entries[0]
             return Fact(
                 id=entry["id"],
                 content=entry["memory"],

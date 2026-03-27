@@ -7,6 +7,15 @@ from memio.exceptions import ProviderError
 from memio.models import Message
 
 
+def _unwrap(response):
+    """Unwrap AsyncHttpResponse to get the underlying data."""
+    if hasattr(type(response), "data") and isinstance(
+        getattr(type(response), "data"), property
+    ):
+        return response.data
+    return response
+
+
 class ZepHistoryAdapter:
     def __init__(self, *, api_key: str | None = None, client=None):
         try:
@@ -22,7 +31,11 @@ class ZepHistoryAdapter:
 
     async def add(self, *, session_id: str, messages: list[Message]) -> None:
         try:
-            # Ensure thread exists
+            # Ensure user and thread exist
+            try:
+                await self._client.user.add(user_id=session_id)
+            except Exception:
+                pass  # User may already exist
             try:
                 await self._client.thread.create(thread_id=session_id, user_id=session_id)
             except Exception:
@@ -31,12 +44,12 @@ class ZepHistoryAdapter:
             try:
                 from zep_cloud.types import Message as ZepMessage
                 zep_messages = [
-                    ZepMessage(role=m.role, content=m.content, role_type=m.role)
+                    ZepMessage(role=m.role, content=m.content)
                     for m in messages
                 ]
             except ImportError:
                 zep_messages = [
-                    {"role": m.role, "content": m.content, "role_type": m.role}
+                    {"role": m.role, "content": m.content}
                     for m in messages
                 ]
             await self._client.thread.add_messages(
@@ -58,10 +71,13 @@ class ZepHistoryAdapter:
             kwargs: dict = {"thread_id": session_id, "limit": limit}
             if cursor:
                 kwargs["cursor"] = cursor
-            response = await self._client.thread.get(**kwargs)
+            response = _unwrap(await self._client.thread.get(**kwargs))
             messages = response.messages or []
             return [self._to_message(m) for m in messages]
         except Exception as e:
+            # Thread not found after deletion — return empty list
+            if "not found" in str(e).lower() or "404" in str(e):
+                return []
             raise ProviderError("zep", "get", e) from e
 
     async def search(
@@ -72,9 +88,9 @@ class ZepHistoryAdapter:
         limit: int = 10,
     ) -> list[Message]:
         try:
-            response = await self._client.graph.search(
-                query=query, limit=limit,
-            )
+            response = _unwrap(await self._client.graph.search(
+                query=query, user_id=session_id, limit=limit,
+            ))
             results = []
             for episode in response.episodes or []:
                 if getattr(episode, "thread_id", None) == session_id:
@@ -101,7 +117,7 @@ class ZepHistoryAdapter:
             except (ValueError, TypeError):
                 pass
         return Message(
-            role=zep_msg.role_type or zep_msg.role or "user",
+            role=getattr(zep_msg, "role_type", None) or zep_msg.role or "user",
             content=zep_msg.content,
             metadata=getattr(zep_msg, "metadata", None),
             timestamp=timestamp,

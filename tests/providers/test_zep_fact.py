@@ -36,11 +36,14 @@ class TestZepFactAdapter:
         mock_client = MagicMock()
         mock_client.graph = MagicMock()
         mock_client.graph.add = AsyncMock(return_value=mock_episode)
+        mock_client.user = MagicMock()
+        mock_client.user.add = AsyncMock()
         adapter = self._make_adapter(mock_client)
 
         fact = await adapter.add(content="likes coffee", user_id="u1")
 
         assert isinstance(fact, Fact)
+        assert fact.id == "ep1"
         assert fact.content == "likes coffee"
 
     async def test_search(self):
