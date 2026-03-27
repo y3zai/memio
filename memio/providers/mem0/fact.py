@@ -1,4 +1,10 @@
-# memio/providers/mem0/fact.py
+"""Mem0 FactStore adapter.
+
+Known quirks:
+- Mem0's LLM may rephrase content (e.g. "likes coffee" → "User likes coffee")
+- Adding duplicate content returns empty results (deduplicated automatically)
+"""
+
 from __future__ import annotations
 
 from datetime import datetime
