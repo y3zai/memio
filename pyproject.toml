@@ -16,6 +16,7 @@ zep = ["zep-cloud"]
 chroma = ["chromadb"]
 all = ["mem0ai", "zep-cloud", "chromadb"]
 dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "pytest-mock>=3.12"]
+docs = ["mkdocs-material", "mkdocstrings[python]"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
