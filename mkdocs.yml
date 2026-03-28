@@ -69,3 +69,8 @@ nav:
   - Contributing:
     - Development: contributing/development.md
     - Adding Providers: contributing/adding-providers.md
+
+extra:
+  analytics:
+    provider: google
+    property: G-9YZVWZNQWQ
