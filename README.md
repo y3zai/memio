@@ -223,9 +223,11 @@ pip install -e ".[all,dev]"
 # Run unit tests
 pytest
 
-# Run integration tests (requires API keys)
-MEM0_API_KEY=... ZEP_API_KEY=... pytest -m integration -v
+# Put OPENAI_API_KEY, MEM0_API_KEY, and ZEP_API_KEY in .env, then run integration tests
+pytest -m integration -v
 ```
+
+Pytest loads `.env` automatically from the repository root for local test runs.
 
 ## License
 
