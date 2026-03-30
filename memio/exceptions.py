@@ -35,7 +35,6 @@ class NotSupportedError(ProviderError):
         if hint:
             message += f": {hint}"
 
-        self.provider = provider
-        self.operation = operation
-        self.cause = NotImplementedError(message)
-        MemioError.__init__(self, message)
+        cause = NotImplementedError(message)
+        super().__init__(provider, operation, cause)
+        Exception.__init__(self, message)
