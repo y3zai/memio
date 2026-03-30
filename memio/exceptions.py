@@ -29,13 +29,13 @@ class NotSupportedError(ProviderError):
     """
 
     def __init__(self, provider: str, operation: str, hint: str = ""):
-        self.provider = provider
-        self.operation = operation
         self.hint = hint
-        self.cause = None
 
         message = f"[{provider}] {operation} is not supported"
         if hint:
             message += f": {hint}"
 
+        self.provider = provider
+        self.operation = operation
+        self.cause = NotImplementedError(message)
         MemioError.__init__(self, message)

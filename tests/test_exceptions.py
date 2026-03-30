@@ -43,7 +43,7 @@ class TestNotSupportedError:
         e = NotSupportedError(provider="zep", operation="delete")
         assert e.provider == "zep"
         assert e.operation == "delete"
-        assert e.cause is None
+        assert isinstance(e.cause, NotImplementedError)
 
     def test_message_format(self):
         e = NotSupportedError(provider="mem0", operation="delete")

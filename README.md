@@ -206,7 +206,7 @@ except MemioError:
     ...
 ```
 
-`NotSupportedError` is a subclass of `ProviderError`, raised when a provider doesn't support a specific operation (e.g., individual delete on Zep). It includes an optional `hint` suggesting what to do instead.
+`NotSupportedError` is a subclass of `ProviderError`, raised when a provider doesn't support a specific operation (e.g., individual delete on Zep). It includes an optional `hint` suggesting what to do instead. Unlike other `ProviderError` subclasses, its `cause` is a `NotImplementedError` (not an underlying SDK exception).
 
 ## Provider notes
 
