@@ -68,14 +68,31 @@ class QdrantDocumentAdapter:
         except Exception as e:
             raise ProviderError("qdrant", "get", e) from e
 
+    @staticmethod
+    def _build_filter(filters: dict | None):
+        """Convert a dict of key-value pairs to a Qdrant Filter."""
+        if not filters:
+            return None
+        from qdrant_client.http.models import (
+            FieldCondition, Filter, MatchValue,
+        )
+        return Filter(must=[
+            FieldCondition(key=k, match=MatchValue(value=v))
+            for k, v in filters.items()
+        ])
+
     async def search(self, *, query: str, limit: int = 10,
                      filters: dict | None = None) -> list[Document]:
         try:
-            results = await self._client.query(
-                collection_name=self._collection_name,
-                query_text=query,
-                limit=limit,
-            )
+            kwargs: dict = {
+                "collection_name": self._collection_name,
+                "query_text": query,
+                "limit": limit,
+            }
+            qf = self._build_filter(filters)
+            if qf is not None:
+                kwargs["query_filter"] = qf
+            results = await self._client.query(**kwargs)
             docs = []
             for result in results:
                 content = result.document
@@ -97,11 +114,15 @@ class QdrantDocumentAdapter:
             if not await self._client.collection_exists(self._collection_name):
                 return []
 
-            records, _ = await self._client.scroll(
-                collection_name=self._collection_name,
-                limit=limit,
-                with_payload=True,
-            )
+            kwargs: dict = {
+                "collection_name": self._collection_name,
+                "limit": limit,
+                "with_payload": True,
+            }
+            sf = self._build_filter(filters)
+            if sf is not None:
+                kwargs["scroll_filter"] = sf
+            records, _ = await self._client.scroll(**kwargs)
             docs = []
             for record in records:
                 payload = record.payload

@@ -14,5 +14,7 @@ class TestQdrantDocumentIntegration:
         client = AsyncQdrantClient(":memory:")
         from memio.providers.qdrant import QdrantDocumentAdapter
         adapter = QdrantDocumentAdapter(client=client, collection_name="test-integration")
-        await document_store_conformance(adapter)
-        await client.close()
+        try:
+            await document_store_conformance(adapter)
+        finally:
+            await client.close()
