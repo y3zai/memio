@@ -89,6 +89,7 @@ client = Memio(
 
 await client.history.add(
     session_id="session-1",
+    user_id="alice",
     messages=[Message(role="user", content="hello")],
 )
 messages = await client.history.get(session_id="session-1")

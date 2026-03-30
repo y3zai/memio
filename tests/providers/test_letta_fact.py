@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from memio.models import Fact
-from memio.exceptions import ProviderError
+from memio.exceptions import NotSupportedError, ProviderError
 
 
 class TestLettaFactAdapter:
@@ -64,11 +64,20 @@ class TestLettaFactAdapter:
         mock_client.agents.passages.search.return_value = mock_response
         adapter = self._make_adapter(mock_client)
 
-        results = await adapter.search(query="coffee", user_id="u1")
+        results = await adapter.search(query="coffee")
 
         assert len(results) == 1
         assert results[0].id == "p1"
         assert results[0].content == "likes coffee"
+
+    async def test_search_with_user_id_raises(self):
+        mock_client = AsyncMock()
+        adapter = self._make_adapter(mock_client)
+
+        with pytest.raises(NotSupportedError) as exc_info:
+            await adapter.search(query="coffee", user_id="u1")
+        assert exc_info.value.provider == "letta"
+        assert exc_info.value.operation == "search"
 
     async def test_get_all(self):
         mock_client = AsyncMock()
@@ -85,9 +94,18 @@ class TestLettaFactAdapter:
         mock_client.agents.passages.list.return_value = [mock_p1, mock_p2]
         adapter = self._make_adapter(mock_client)
 
-        results = await adapter.get_all(user_id="u1")
+        results = await adapter.get_all()
 
         assert len(results) == 2
+
+    async def test_get_all_with_user_id_raises(self):
+        mock_client = AsyncMock()
+        adapter = self._make_adapter(mock_client)
+
+        with pytest.raises(NotSupportedError) as exc_info:
+            await adapter.get_all(user_id="u1")
+        assert exc_info.value.provider == "letta"
+        assert exc_info.value.operation == "get_all"
 
     async def test_delete(self):
         mock_client = AsyncMock()
@@ -108,9 +126,18 @@ class TestLettaFactAdapter:
         mock_client.agents.passages.list.return_value = [mock_p1, mock_p2]
         adapter = self._make_adapter(mock_client)
 
-        await adapter.delete_all(user_id="u1")
+        await adapter.delete_all()
 
         assert mock_client.agents.passages.delete.call_count == 2
+
+    async def test_delete_all_with_user_id_raises(self):
+        mock_client = AsyncMock()
+        adapter = self._make_adapter(mock_client)
+
+        with pytest.raises(NotSupportedError) as exc_info:
+            await adapter.delete_all(user_id="u1")
+        assert exc_info.value.provider == "letta"
+        assert exc_info.value.operation == "delete_all"
 
     async def test_update_emulates_via_delete_and_create(self):
         mock_client = AsyncMock()

@@ -40,9 +40,9 @@ class TestLettaFactIntegration:
         from memio.providers.letta import LettaFactAdapter
         store = LettaFactAdapter(**letta_kwargs)
 
-        await store.delete_all(user_id="test-user")
+        await store.delete_all()
 
-        fact = await store.add(content="likes coffee", user_id="test-user")
+        fact = await store.add(content="likes coffee")
         assert isinstance(fact, Fact)
         assert fact.id is not None
         assert "coffee" in fact.content.lower()
@@ -51,16 +51,16 @@ class TestLettaFactIntegration:
         assert retrieved.id == fact.id
         assert "coffee" in retrieved.content.lower()
 
-        results = await store.search(query="coffee", user_id="test-user")
+        results = await store.search(query="coffee")
         assert isinstance(results, list)
         assert len(results) >= 1
 
-        all_facts = await store.get_all(user_id="test-user")
+        all_facts = await store.get_all()
         assert isinstance(all_facts, list)
         assert any(f.id == fact.id for f in all_facts)
 
         await store.delete(fact_id=fact.id)
-        after_delete = await store.get_all(user_id="test-user")
+        after_delete = await store.get_all()
         assert all(f.id != fact.id for f in after_delete)
 
     async def test_update_emulates_via_delete_create(self, letta_kwargs):
@@ -80,10 +80,10 @@ class TestLettaFactIntegration:
         from memio.providers.letta import LettaFactAdapter
         store = LettaFactAdapter(**letta_kwargs)
 
-        await store.add(content="bulk fact one", user_id="test-bulk")
-        await store.add(content="bulk fact two", user_id="test-bulk")
-        await store.delete_all(user_id="test-bulk")
-        remaining = await store.get_all(user_id="test-bulk")
+        await store.add(content="bulk fact one")
+        await store.add(content="bulk fact two")
+        await store.delete_all()
+        remaining = await store.get_all()
         assert len(remaining) == 0
 
 
@@ -142,7 +142,9 @@ class TestLettaHistoryIntegration:
         store = LettaHistoryAdapter(**letta_kwargs)
 
         msgs = [Message(role="user", content="hello")]
-        await store.add(session_id="test-session", messages=msgs)
+        await store.add(
+            session_id="test-session", messages=msgs, user_id="test-user",
+        )
 
         retrieved = await store.get(session_id="test-session")
         assert isinstance(retrieved, list)

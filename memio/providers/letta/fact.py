@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from memio.exceptions import ProviderError
+from memio.exceptions import NotSupportedError, ProviderError
 from memio.models import Fact
 
 
@@ -84,6 +84,13 @@ class LettaFactAdapter:
         agent_id: str | None = None,
         limit: int = 100,
     ) -> list[Fact]:
+        if user_id is not None or agent_id is not None:
+            raise NotSupportedError(
+                "letta", "get_all",
+                hint="Letta passages are agent-scoped at the adapter level; "
+                     "user_id/agent_id filtering is not supported. "
+                     "Omit both to list all passages.",
+            )
         try:
             passages = await self._client.agents.passages.list(
                 self._agent_id,
@@ -102,6 +109,13 @@ class LettaFactAdapter:
         limit: int = 10,
         filters: dict | None = None,
     ) -> list[Fact]:
+        if user_id is not None or agent_id is not None:
+            raise NotSupportedError(
+                "letta", "search",
+                hint="Letta passages are agent-scoped at the adapter level; "
+                     "user_id/agent_id filtering is not supported. "
+                     "Omit both to search all passages.",
+            )
         try:
             response = await self._client.agents.passages.search(
                 self._agent_id,
@@ -145,6 +159,13 @@ class LettaFactAdapter:
         user_id: str | None = None,
         agent_id: str | None = None,
     ) -> None:
+        if user_id is not None or agent_id is not None:
+            raise NotSupportedError(
+                "letta", "delete_all",
+                hint="Letta passages are agent-scoped at the adapter level; "
+                     "user_id/agent_id filtering is not supported. "
+                     "Omit both to delete all passages for this agent.",
+            )
         try:
             passages = await self._client.agents.passages.list(
                 self._agent_id,

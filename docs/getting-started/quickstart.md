@@ -88,6 +88,7 @@ async def main():
     # --- History (Zep) ---
     await client.history.add(
         session_id="session-1",
+        user_id="alice",
         messages=[
             Message(role="user", content="What's the weather like?"),
             Message(role="assistant", content="It's sunny and 72F."),
@@ -144,9 +145,10 @@ Manage conversation message history by session.
 ```python
 from memio import Message
 
-# Add messages to a session
+# Add messages to a session (user_id enables scoped get_all/delete_all)
 await client.history.add(
     session_id="session-1",
+    user_id="alice",
     messages=[
         Message(role="user", content="hello"),
         Message(role="assistant", content="hi there"),

@@ -62,6 +62,7 @@ from memio import Message
 
 await client.history.add(
     session_id="session-1",
+    user_id="alice",
     messages=[
         Message(role="user", content="hello"),
         Message(role="assistant", content="hi there"),
@@ -100,7 +101,7 @@ await store.delete_all(user_id="alice")
 ### HistoryStore
 
 ```python
-await store.add(session_id="s1", messages=[Message(role="user", content="hello")])
+await store.add(session_id="s1", user_id="alice", messages=[Message(role="user", content="hello")])
 messages = await store.get(session_id="s1", limit=50)
 results = await store.search(session_id="s1", query="hello")
 sessions = await store.get_all(user_id="alice")
