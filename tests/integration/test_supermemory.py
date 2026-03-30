@@ -1,3 +1,4 @@
+import asyncio
 import os
 
 import pytest
@@ -43,5 +44,13 @@ class TestSupermemoryDocumentIntegration:
 
         retrieved = await adapter.get(doc_id=doc.id)
         assert retrieved.id == doc.id
+
+        # Supermemory processes documents asynchronously; wait for
+        # processing to finish before deleting (409 otherwise).
+        for _ in range(30):
+            raw = await adapter._client.documents.get(doc.id)
+            if raw.status == "done":
+                break
+            await asyncio.sleep(1)
 
         await adapter.delete(doc_id=doc.id)
