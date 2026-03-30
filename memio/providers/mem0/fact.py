@@ -14,6 +14,13 @@ from memio.models import Fact
 
 
 class Mem0FactAdapter:
+    """FactStore implementation backed by Mem0.
+
+    Args:
+        api_key: Mem0 API key. If not provided, uses the default from environment.
+        config: Optional Mem0 client configuration dict.
+    """
+
     def __init__(self, *, api_key: str | None = None, config: dict | None = None):
         try:
             from mem0 import AsyncMemory

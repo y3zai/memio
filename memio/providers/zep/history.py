@@ -17,6 +17,17 @@ def _unwrap(response):
 
 
 class ZepHistoryAdapter:
+    """HistoryStore implementation backed by Zep threads.
+
+    Maps session IDs to Zep threads. Automatically creates users and threads
+    on first message add. Returns empty lists (not errors) for non-existent
+    sessions or users.
+
+    Args:
+        api_key: Zep Cloud API key.
+        client: Pre-initialized AsyncZep client (overrides api_key).
+    """
+
     def __init__(self, *, api_key: str | None = None, client=None):
         try:
             from zep_cloud import AsyncZep

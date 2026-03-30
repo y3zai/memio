@@ -8,6 +8,16 @@ from memio.models import Document
 
 
 class ChromaDocumentAdapter:
+    """DocumentStore implementation backed by ChromaDB.
+
+    Uses a chromadb collection for vector storage and semantic search.
+    Similarity scores are computed as ``1.0 / (1.0 + distance)``.
+
+    Args:
+        client: A chromadb client instance (EphemeralClient or PersistentClient).
+        collection_name: Name of the Chroma collection to use or create.
+    """
+
     def __init__(self, *, client, collection_name: str):
         try:
             import chromadb  # noqa: F401

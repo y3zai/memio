@@ -6,6 +6,16 @@ from memio.models import GraphResult, Triple
 
 
 class ZepGraphAdapter:
+    """GraphStore implementation backed by Zep's graph API.
+
+    Stores triples as fact-triples with predicate-based relationship names.
+    Individual entity/triple deletion is not supported; use `delete_all` instead.
+
+    Args:
+        api_key: Zep Cloud API key.
+        client: Pre-initialized AsyncZep client (overrides api_key).
+    """
+
     def __init__(self, *, api_key: str | None = None, client=None):
         try:
             from zep_cloud import AsyncZep
