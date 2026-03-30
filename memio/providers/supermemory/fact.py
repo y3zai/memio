@@ -165,7 +165,10 @@ class SupermemoryFactAdapter:
         updated_at = None
         if getattr(entry, "updated_at", None):
             try:
-                updated_at = datetime.fromisoformat(entry.updated_at)
+                raw = entry.updated_at
+                if raw.endswith("Z"):
+                    raw = raw[:-1] + "+00:00"
+                updated_at = datetime.fromisoformat(raw)
             except (ValueError, TypeError):
                 pass
         return Fact(

@@ -2,7 +2,7 @@
 
 **Unified memory gateway for AI agents.**
 
-memio lets you swap between memory backends -- Mem0, Zep, Chroma, and Qdrant -- without changing your application code. Define what memory capabilities you need (facts, conversation history, documents, knowledge graphs) and plug in any supported provider.
+memio lets you swap between memory backends -- Mem0, Zep, Chroma, Qdrant, Letta, and Supermemory -- without changing your application code. Define what memory capabilities you need (facts, conversation history, documents, knowledge graphs) and plug in any supported provider.
 
 ## Why memio?
 

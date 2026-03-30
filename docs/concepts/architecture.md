@@ -60,7 +60,7 @@ Your AI Agent
      |
      |-- facts     -> Mem0FactAdapter        -> Mem0 Cloud API
      |-- history   -> ZepHistoryAdapter      -> Zep Cloud API
-     |-- documents -> QdrantDocumentAdapter  -> Qdrant (local or cloud)
+     |-- documents -> DocumentStore adapters -> Vector DBs (Qdrant, Chroma, ...)
      |-- graph     -> ZepGraphAdapter        -> Zep Cloud API
 ```
 
@@ -92,12 +92,12 @@ accessing an omitted store attribute returns `None`.
 
 ### Provider support matrix
 
-| Store | Mem0 | Zep | Chroma | Supermemory |
-|---|---|---|---|---|
-| FactStore | Mem0FactAdapter | ZepFactAdapter | -- | SupermemoryFactAdapter |
-| HistoryStore | -- | ZepHistoryAdapter | -- | -- |
-| DocumentStore | -- | -- | ChromaDocumentAdapter | SupermemoryDocumentAdapter |
-| GraphStore | Mem0GraphAdapter | ZepGraphAdapter | -- | -- |
+| Store | Mem0 | Zep | Chroma | Supermemory | Letta | Qdrant |
+|---|---|---|---|---|---|---|
+| FactStore | Mem0FactAdapter | ZepFactAdapter | -- | SupermemoryFactAdapter | LettaFactAdapter | -- |
+| HistoryStore | -- | ZepHistoryAdapter | -- | -- | -- | -- |
+| DocumentStore | -- | -- | ChromaDocumentAdapter | SupermemoryDocumentAdapter | LettaDocumentAdapter | QdrantDocumentAdapter |
+| GraphStore | Mem0GraphAdapter | ZepGraphAdapter | -- | -- | -- | -- |
 
 ## Error handling
 
@@ -116,7 +116,7 @@ except ProviderError as e:
 
 `ProviderError` always carries three attributes:
 
-- **`provider`** -- the name of the provider (`"mem0"`, `"zep"`, `"chroma"`, `"supermemory"`).
+- **`provider`** -- the name of the provider (`"mem0"`, `"zep"`, `"chroma"`, `"supermemory"`, `"letta"`, `"qdrant"`).
 - **`operation`** -- the protocol method that failed (`"add"`, `"search"`, etc.).
 - **`cause`** -- the original exception from the provider SDK.
 

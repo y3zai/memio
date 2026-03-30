@@ -135,7 +135,7 @@ await client.facts.delete(fact_id=fact.id)
 await client.facts.delete_all(user_id="alice")
 ```
 
-**Providers:** Mem0 (`Mem0FactAdapter`), Zep (`ZepFactAdapter`), Supermemory (`SupermemoryFactAdapter`)
+**Providers:** Mem0 (`Mem0FactAdapter`), Zep (`ZepFactAdapter`), Supermemory (`SupermemoryFactAdapter`), Letta (`LettaFactAdapter`)
 
 ### HistoryStore
 
@@ -197,7 +197,7 @@ await client.documents.delete(doc_id=doc.id)
 await client.documents.delete_all()
 ```
 
-**Providers:** Chroma (`ChromaDocumentAdapter`), Supermemory (`SupermemoryDocumentAdapter`)
+**Providers:** Chroma (`ChromaDocumentAdapter`), Supermemory (`SupermemoryDocumentAdapter`), Qdrant (`QdrantDocumentAdapter`), Letta (`LettaDocumentAdapter`)
 
 ### GraphStore
 

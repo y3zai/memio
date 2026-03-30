@@ -52,5 +52,7 @@ class TestSupermemoryDocumentIntegration:
             if raw.status == "done":
                 break
             await asyncio.sleep(1)
+        else:
+            pytest.skip("Supermemory document processing did not complete within timeout")
 
         await adapter.delete(doc_id=doc.id)
