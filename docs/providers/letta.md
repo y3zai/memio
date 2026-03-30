@@ -64,6 +64,22 @@ results = await client.facts.search(query="coffee")
 await client.facts.delete(fact_id=fact.id)
 ```
 
+### Scoping limitation
+
+Letta passages are agent-scoped at the adapter level. Passing `user_id` or
+`agent_id` to `search()`, `get_all()`, or `delete_all()` raises
+`NotSupportedError`. Omit both arguments to operate on all passages for the
+configured agent:
+
+```python
+# OK — no scoping arguments
+results = await client.facts.search(query="coffee")
+all_facts = await client.facts.get_all()
+
+# raises NotSupportedError
+results = await client.facts.search(query="coffee", user_id="alice")
+```
+
 ### Update behavior
 
 Letta's passages API has no native update. The adapter emulates update via
