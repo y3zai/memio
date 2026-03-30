@@ -1,4 +1,4 @@
-# Mem0 Providers
+# Mem0 Adapters
 
 ::: memio.providers.mem0.Mem0FactAdapter
 

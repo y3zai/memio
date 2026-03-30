@@ -1,4 +1,4 @@
-# Zep Providers
+# Zep Adapters
 
 ::: memio.providers.zep.ZepFactAdapter
 
