@@ -50,6 +50,14 @@ Each memory provider is an optional extra. Install only what you need:
 
     Installs `letta-client`. Requires a Letta API key or self-hosted server.
 
+=== "Qdrant"
+
+    ```bash
+    pip install memio[qdrant]
+    ```
+
+    Installs `qdrant-client[fastembed]`. Runs locally with no API key required.
+
 === "All providers"
 
     ```bash
@@ -90,6 +98,7 @@ python -c "from memio.providers.chroma import ChromaDocumentAdapter; print('chro
 python -c "from memio.providers.mem0 import Mem0FactAdapter; print('mem0 ready')"
 python -c "from memio.providers.zep import ZepHistoryAdapter; print('zep ready')"
 python -c "from memio.providers.letta import LettaFactAdapter; print('letta ready')"
+python -c "from memio.providers.qdrant import QdrantDocumentAdapter; print('qdrant ready')"
 ```
 
 ## Next steps

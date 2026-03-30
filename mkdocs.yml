@@ -60,6 +60,7 @@ nav:
     - Zep: providers/zep.md
     - Chroma: providers/chroma.md
     - Letta: providers/letta.md
+    - Qdrant: providers/qdrant.md
   - Guides:
     - Custom Providers: guides/custom-providers.md
   - API Reference:
@@ -71,6 +72,7 @@ nav:
     - Zep Adapters: api/providers-zep.md
     - Chroma Adapters: api/providers-chroma.md
     - Letta Adapters: api/providers-letta.md
+    - Qdrant Adapters: api/providers-qdrant.md
   - Contributing:
     - Development: contributing/development.md
     - Adding Providers: contributing/adding-providers.md
