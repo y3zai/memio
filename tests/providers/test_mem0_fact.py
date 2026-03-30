@@ -14,11 +14,12 @@ def _mock_mem0_module():
 
 
 class TestMem0FactAdapter:
-    def _make_adapter(self, mock_client):
+    def _make_adapter(self, mock_client, *, is_cloud=False):
         with patch.dict("sys.modules", {"mem0": MagicMock()}):
             from memio.providers.mem0.fact import Mem0FactAdapter
             adapter = Mem0FactAdapter.__new__(Mem0FactAdapter)
             adapter._client = mock_client
+            adapter._is_cloud = is_cloud
         return adapter
 
     async def test_add(self):

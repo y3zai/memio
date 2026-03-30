@@ -3,6 +3,8 @@
 Known quirks:
 - Mem0's LLM may rephrase content (e.g. "likes coffee" → "User likes coffee")
 - Adding duplicate content returns empty results (deduplicated automatically)
+- Mem0 Cloud processes memories asynchronously; ``add`` returns an event_id
+  while the memory is created in the background.
 """
 
 from __future__ import annotations
@@ -23,17 +25,38 @@ class Mem0FactAdapter:
 
     def __init__(self, *, api_key: str | None = None, config: dict | None = None):
         try:
-            from mem0 import AsyncMemory
+            if api_key:
+                from mem0 import AsyncMemoryClient
+                self._client = AsyncMemoryClient(api_key=api_key)
+                self._is_cloud = True
+            else:
+                from mem0 import AsyncMemory
+                kwargs = {}
+                if config:
+                    kwargs["config"] = config
+                self._client = AsyncMemory(**kwargs)
+                self._is_cloud = False
         except ImportError:
             raise ImportError(
                 "mem0 provider requires mem0ai: pip install memio[mem0]"
             )
-        kwargs = {}
-        if api_key:
-            kwargs["api_key"] = api_key
-        if config:
-            kwargs["config"] = config
-        self._client = AsyncMemory(**kwargs)
+
+    def _build_filters(
+        self,
+        *,
+        user_id: str | None = None,
+        agent_id: str | None = None,
+        extra: dict | None = None,
+    ) -> dict:
+        """Build a filters dict for the Mem0 Cloud v2 API."""
+        f: dict = {}
+        if user_id:
+            f["user_id"] = user_id
+        if agent_id:
+            f["agent_id"] = agent_id
+        if extra:
+            f.update(extra)
+        return f
 
     async def add(
         self,
@@ -59,9 +82,13 @@ class Mem0FactAdapter:
                     "(deduplicated)"
                 )
             entry = entries[0]
+            # Mem0 Cloud returns PENDING with an event_id; the actual
+            # memory is created asynchronously.
+            fact_id = entry.get("id") or entry.get("event_id")
+            fact_content = entry.get("memory") or content
             return Fact(
-                id=entry["id"],
-                content=entry["memory"],
+                id=fact_id,
+                content=fact_content,
                 user_id=user_id,
                 agent_id=agent_id,
                 metadata=metadata,
@@ -89,12 +116,17 @@ class Mem0FactAdapter:
     ) -> list[Fact]:
         try:
             kwargs: dict = {"query": query, "limit": limit}
-            if user_id:
-                kwargs["user_id"] = user_id
-            if agent_id:
-                kwargs["agent_id"] = agent_id
-            if filters:
-                kwargs["filters"] = filters
+            if self._is_cloud:
+                kwargs["filters"] = self._build_filters(
+                    user_id=user_id, agent_id=agent_id, extra=filters,
+                )
+            else:
+                if user_id:
+                    kwargs["user_id"] = user_id
+                if agent_id:
+                    kwargs["agent_id"] = agent_id
+                if filters:
+                    kwargs["filters"] = filters
             result = await self._client.search(**kwargs)
             return [self._to_fact(entry) for entry in result["results"]]
         except Exception as e:
@@ -108,7 +140,10 @@ class Mem0FactAdapter:
         metadata: dict | None = None,
     ) -> Fact:
         try:
-            await self._client.update(fact_id, data=content)
+            if self._is_cloud:
+                await self._client.update(fact_id, text=content)
+            else:
+                await self._client.update(fact_id, data=content)
             return Fact(id=fact_id, content=content, metadata=metadata)
         except Exception as e:
             raise ProviderError("mem0", "update", e) from e
@@ -144,10 +179,15 @@ class Mem0FactAdapter:
     ) -> list[Fact]:
         try:
             kwargs: dict = {"limit": limit}
-            if user_id:
-                kwargs["user_id"] = user_id
-            if agent_id:
-                kwargs["agent_id"] = agent_id
+            if self._is_cloud:
+                kwargs["filters"] = self._build_filters(
+                    user_id=user_id, agent_id=agent_id,
+                )
+            else:
+                if user_id:
+                    kwargs["user_id"] = user_id
+                if agent_id:
+                    kwargs["agent_id"] = agent_id
             result = await self._client.get_all(**kwargs)
             return [self._to_fact(entry) for entry in result["results"]]
         except Exception as e:
