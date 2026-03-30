@@ -58,10 +58,10 @@ Your AI Agent
      v
    Memio Client
      |
-     |-- facts     -> Mem0FactAdapter      -> Mem0 Cloud API
-     |-- history   -> ZepHistoryAdapter     -> Zep Cloud API
-     |-- documents -> ChromaDocumentAdapter -> Local Chroma
-     |-- graph     -> ZepGraphAdapter       -> Zep Cloud API
+     |-- facts     -> Mem0FactAdapter        -> Mem0 Cloud API
+     |-- history   -> ZepHistoryAdapter      -> Zep Cloud API
+     |-- documents -> QdrantDocumentAdapter  -> Qdrant (local or cloud)
+     |-- graph     -> ZepGraphAdapter        -> Zep Cloud API
 ```
 
 ## Composability
