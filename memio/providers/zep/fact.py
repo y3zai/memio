@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from memio.exceptions import ProviderError
+from memio.exceptions import NotSupportedError, ProviderError
 from memio.models import Fact
 
 
@@ -126,12 +126,7 @@ class ZepFactAdapter:
             raise ProviderError("zep", "update", e) from e
 
     async def delete(self, *, fact_id: str) -> None:
-        # Zep doesn't have direct edge delete in the public API
-        # This is a limitation — raise clear error
-        raise ProviderError(
-            "zep", "delete",
-            NotImplementedError("Zep does not support deleting individual facts"),
-        )
+        raise NotSupportedError("zep", "delete")
 
     async def delete_all(
         self,

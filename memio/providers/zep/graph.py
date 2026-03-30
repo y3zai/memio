@@ -1,7 +1,7 @@
 # memio/providers/zep/graph.py
 from __future__ import annotations
 
-from memio.exceptions import ProviderError
+from memio.exceptions import NotSupportedError, ProviderError
 from memio.models import GraphResult, Triple
 
 
@@ -145,11 +145,7 @@ class ZepGraphAdapter:
         entity: str | None = None,
         triple_id: str | None = None,
     ) -> None:
-        # Zep doesn't have direct entity/edge delete in a way that maps cleanly
-        raise ProviderError(
-            "zep", "delete",
-            NotImplementedError("Zep does not support individual entity/triple deletes; use delete_all"),
-        )
+        raise NotSupportedError("zep", "delete")
 
     async def delete_all(self, *, user_id: str | None = None) -> None:
         try:

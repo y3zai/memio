@@ -2,7 +2,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from memio.models import GraphResult, Triple
-from memio.exceptions import ProviderError
+from memio.exceptions import NotSupportedError, ProviderError
 
 
 class TestMem0GraphAdapter:
@@ -69,6 +69,16 @@ class TestMem0GraphAdapter:
 
         assert isinstance(result, GraphResult)
         assert len(result.triples) == 1
+
+    async def test_delete_raises_not_supported(self):
+        mock_client = AsyncMock()
+        mock_graph = MagicMock()
+        adapter = self._make_adapter(mock_client, mock_graph)
+
+        with pytest.raises(NotSupportedError) as exc_info:
+            await adapter.delete(entity="Alice")
+        assert exc_info.value.provider == "mem0"
+        assert exc_info.value.operation == "delete"
 
     async def test_delete_all(self):
         mock_client = AsyncMock()
