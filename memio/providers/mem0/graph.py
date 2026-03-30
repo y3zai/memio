@@ -6,6 +6,16 @@ from memio.models import GraphResult, Triple
 
 
 class Mem0GraphAdapter:
+    """GraphStore implementation backed by Mem0.
+
+    Converts triples to natural language for Mem0's LLM-based graph extraction.
+    Individual entity/triple deletion is not supported; use `delete_all` instead.
+
+    Args:
+        api_key: Mem0 API key. If not provided, uses the default from environment.
+        config: Optional Mem0 client configuration dict.
+    """
+
     def __init__(self, *, api_key: str | None = None, config: dict | None = None):
         try:
             from mem0 import AsyncMemory
