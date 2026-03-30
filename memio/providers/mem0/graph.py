@@ -1,7 +1,7 @@
 # memio/providers/mem0/graph.py
 from __future__ import annotations
 
-from memio.exceptions import ProviderError
+from memio.exceptions import NotSupportedError, ProviderError
 from memio.models import GraphResult, Triple
 
 
@@ -100,11 +100,7 @@ class Mem0GraphAdapter:
         entity: str | None = None,
         triple_id: str | None = None,
     ) -> None:
-        # mem0 does not support individual entity/relationship deletes
-        raise ProviderError(
-            "mem0", "delete",
-            NotImplementedError("mem0 graph does not support individual deletes; use delete_all"),
-        )
+        raise NotSupportedError("mem0", "delete")
 
     async def delete_all(self, *, user_id: str | None = None) -> None:
         try:

@@ -1,5 +1,5 @@
 from memio.client import Memio
-from memio.exceptions import MemioError, ProviderError
+from memio.exceptions import MemioError, NotSupportedError, ProviderError
 from memio.models import Document, Fact, GraphResult, Message, Triple
 from memio.protocols import DocumentStore, FactStore, GraphStore, HistoryStore
 
@@ -16,4 +16,5 @@ __all__ = [
     "GraphResult",
     "MemioError",
     "ProviderError",
+    "NotSupportedError",
 ]

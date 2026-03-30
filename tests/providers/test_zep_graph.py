@@ -2,7 +2,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from memio.models import GraphResult, Triple
-from memio.exceptions import ProviderError
+from memio.exceptions import NotSupportedError, ProviderError
 
 
 def _mock_zep_node(name, uuid_="n1", summary=""):
@@ -82,6 +82,15 @@ class TestZepGraphAdapter:
         assert isinstance(result, GraphResult)
         assert len(result.triples) == 1
         assert len(result.nodes) >= 1
+
+    async def test_delete_raises_not_supported(self):
+        mock_client = MagicMock()
+        adapter = self._make_adapter(mock_client)
+
+        with pytest.raises(NotSupportedError) as exc_info:
+            await adapter.delete(entity="Alice")
+        assert exc_info.value.provider == "zep"
+        assert exc_info.value.operation == "delete"
 
     async def test_delete_all(self):
         mock_client = MagicMock()

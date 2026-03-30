@@ -2,7 +2,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from memio.models import Fact
-from memio.exceptions import ProviderError
+from memio.exceptions import NotSupportedError, ProviderError
 
 
 def _mock_zep_edge(uuid_, fact, name, source_uuid, target_uuid, created_at=None):
@@ -88,13 +88,14 @@ class TestZepFactAdapter:
 
         assert fact.content == "likes tea"
 
-    async def test_delete_raises_not_implemented(self):
+    async def test_delete_raises_not_supported(self):
         mock_client = MagicMock()
         adapter = self._make_adapter(mock_client)
 
-        with pytest.raises(ProviderError) as exc_info:
+        with pytest.raises(NotSupportedError) as exc_info:
             await adapter.delete(fact_id="e1")
-        assert isinstance(exc_info.value.cause, NotImplementedError)
+        assert exc_info.value.provider == "zep"
+        assert exc_info.value.operation == "delete"
 
     async def test_delete_all(self):
         mock_client = MagicMock()

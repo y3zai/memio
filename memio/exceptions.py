@@ -17,3 +17,17 @@ class ProviderError(MemioError):
         self.operation = operation
         self.cause = cause
         super().__init__(f"[{provider}] {operation} failed: {cause}")
+
+
+class NotSupportedError(ProviderError):
+    """Raised when a provider does not support a specific operation.
+
+    Attributes:
+        provider: Name of the provider (e.g. "mem0", "zep").
+        operation: Name of the unsupported operation (e.g. "delete").
+    """
+
+    def __init__(self, provider: str, operation: str):
+        super().__init__(provider, operation, NotImplementedError(
+            f"{provider} does not support {operation}"
+        ))
