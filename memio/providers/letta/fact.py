@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from memio.exceptions import NotSupportedError, ProviderError
+from memio.exceptions import NotFoundError, NotSupportedError, ProviderError
 from memio.models import Fact
 
 
@@ -73,7 +73,9 @@ class LettaFactAdapter:
             for p in passages:
                 if p.id == fact_id:
                     return self._to_fact(p)
-            raise ValueError(f"fact {fact_id!r} not found")
+            raise NotFoundError("fact", fact_id)
+        except (NotFoundError, ProviderError):
+            raise
         except Exception as e:
             raise ProviderError("letta", "get", e) from e
 

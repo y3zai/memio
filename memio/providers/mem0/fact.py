@@ -12,7 +12,7 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime
 
-from memio.exceptions import ProviderError
+from memio.exceptions import NotFoundError, ProviderError
 from memio.models import Fact
 
 _POLL_INTERVAL = 1.0  # seconds between polls
@@ -139,8 +139,10 @@ class Mem0FactAdapter:
         try:
             result = await self._client.get(fact_id)
             if result is None:
-                raise ValueError(f"fact {fact_id!r} not found")
+                raise NotFoundError("fact", fact_id)
             return self._to_fact(result)
+        except (NotFoundError, ProviderError):
+            raise
         except Exception as e:
             raise ProviderError("mem0", "get", e) from e
 

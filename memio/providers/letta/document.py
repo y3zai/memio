@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from memio.exceptions import ProviderError
+from memio.exceptions import NotFoundError, ProviderError
 from memio.models import Document
 
 
@@ -71,7 +71,9 @@ class LettaDocumentAdapter:
             for p in passages:
                 if p.id == doc_id:
                     return self._to_document(p)
-            raise ValueError(f"document {doc_id!r} not found")
+            raise NotFoundError("document", doc_id)
+        except (NotFoundError, ProviderError):
+            raise
         except Exception as e:
             raise ProviderError("letta", "get", e) from e
 

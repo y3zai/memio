@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from memio.models import Document
-from memio.exceptions import ProviderError
+from memio.exceptions import NotFoundError, ProviderError
 
 
 class TestLettaDocumentAdapter:
@@ -49,9 +49,10 @@ class TestLettaDocumentAdapter:
         mock_client.agents.passages.list.return_value = []
         adapter = self._make_adapter(mock_client)
 
-        with pytest.raises(ProviderError) as exc_info:
+        with pytest.raises(NotFoundError) as exc_info:
             await adapter.get(doc_id="nonexistent")
-        assert exc_info.value.provider == "letta"
+        assert exc_info.value.resource == "document"
+        assert exc_info.value.resource_id == "nonexistent"
 
     async def test_search(self):
         mock_client = AsyncMock()

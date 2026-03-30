@@ -63,6 +63,7 @@ nav:
     - Qdrant: providers/qdrant.md
     - Supermemory: providers/supermemory.md
   - Guides:
+    - REST API Server: guides/rest-api.md
     - Custom Providers: guides/custom-providers.md
   - API Reference:
     - Client: api/client.md

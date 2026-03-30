@@ -3,6 +3,20 @@ class MemioError(Exception):
     pass
 
 
+class NotFoundError(MemioError):
+    """Raised when a requested resource does not exist.
+
+    Attributes:
+        resource: Type of resource (e.g. "fact", "document").
+        resource_id: The ID that was not found.
+    """
+
+    def __init__(self, resource: str, resource_id: str):
+        self.resource = resource
+        self.resource_id = resource_id
+        super().__init__(f"{resource} '{resource_id}' not found")
+
+
 class ProviderError(MemioError):
     """Wraps provider SDK exceptions with context.
 

@@ -19,8 +19,12 @@ letta = ["letta-client"]
 qdrant = ["qdrant-client[fastembed]"]
 supermemory = ["supermemory"]
 all = ["mem0ai", "zep-cloud", "chromadb", "letta-client", "qdrant-client[fastembed]", "supermemory"]
-dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "pytest-mock>=3.12", "pytest-dotenv>=0.5.2"]
+server = ["fastapi>=0.115", "uvicorn[standard]>=0.30", "pyyaml>=6.0"]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "pytest-mock>=3.12", "pytest-dotenv>=0.5.2", "httpx>=0.27"]
 docs = ["mkdocs-material", "mkdocstrings[python]"]
+
+[project.scripts]
+memio-server = "memio.server.__main__:main"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
