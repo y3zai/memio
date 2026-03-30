@@ -2,6 +2,13 @@
 
 Maps memio sessions to Letta conversations. Each session_id maps to a
 Letta conversation. Messages are sent and retrieved via the conversations API.
+
+Known quirks:
+- conversations.messages.create sends messages to the agent and triggers
+  processing (returns a stream). The agent may generate additional messages.
+- Messages returned from list are polymorphic (UserMessage, AssistantMessage,
+  etc.) with a message_type discriminator.
+- Message content field is ``content`` (not ``text``), timestamp is ``date``.
 """
 
 from __future__ import annotations
@@ -10,6 +17,9 @@ from datetime import datetime
 
 from memio.exceptions import ProviderError
 from memio.models import Message
+
+
+_USER_VISIBLE_TYPES = {"user_message", "assistant_message"}
 
 
 class LettaHistoryAdapter:
@@ -56,16 +66,17 @@ class LettaHistoryAdapter:
                 conv_id = conv.id
                 self._sessions[session_id] = conv_id
 
-            from letta_client import MessageCreate
-
             letta_messages = [
-                MessageCreate(role=m.role, text=m.content, name=m.name)
+                {"role": m.role, "content": m.content, "name": m.name}
                 for m in messages
             ]
-            await self._client.conversations.messages.create(
-                conversation_id=conv_id,
+            stream = await self._client.conversations.messages.create(
+                conv_id,
                 messages=letta_messages,
             )
+            # Consume the stream to complete the request
+            async for _ in stream:
+                pass
         except ProviderError:
             raise
         except Exception as e:
@@ -83,15 +94,17 @@ class LettaHistoryAdapter:
             if conv_id is None:
                 return []
 
-            kwargs: dict = {"conversation_id": conv_id}
-            if limit:
-                kwargs["limit"] = limit
+            kwargs: dict = {"limit": limit}
             if cursor:
                 kwargs["after"] = cursor
-            letta_messages = await self._client.conversations.messages.list(
-                **kwargs
+            page = await self._client.conversations.messages.list(
+                conv_id, **kwargs
             )
-            return [self._to_message(m) for m in letta_messages]
+            items = page.items if hasattr(page, "items") else list(page)
+            return [
+                self._to_message(m) for m in items
+                if getattr(m, "message_type", None) in _USER_VISIBLE_TYPES
+            ]
         except Exception as e:
             if "not found" in str(e).lower() or "404" in str(e):
                 return []
@@ -109,15 +122,16 @@ class LettaHistoryAdapter:
             if conv_id is None:
                 return []
 
-            letta_messages = await self._client.conversations.messages.list(
-                conversation_id=conv_id,
-            )
+            page = await self._client.conversations.messages.list(conv_id)
+            items = page.items if hasattr(page, "items") else list(page)
             query_lower = query.lower()
-            results = [
-                self._to_message(m)
-                for m in letta_messages
-                if query_lower in getattr(m, "text", "").lower()
-            ]
+            results = []
+            for m in items:
+                if getattr(m, "message_type", None) not in _USER_VISIBLE_TYPES:
+                    continue
+                content = self._extract_content(m)
+                if query_lower in content.lower():
+                    results.append(self._to_message(m))
             return results[:limit]
         except Exception as e:
             if "not found" in str(e).lower() or "404" in str(e):
@@ -128,9 +142,7 @@ class LettaHistoryAdapter:
         try:
             conv_id = self._sessions.pop(session_id, None)
             if conv_id:
-                await self._client.conversations.delete(
-                    conversation_id=conv_id
-                )
+                await self._client.conversations.delete(conv_id)
         except Exception as e:
             raise ProviderError("letta", "delete", e) from e
 
@@ -148,29 +160,47 @@ class LettaHistoryAdapter:
     async def delete_all(self, *, user_id: str | None = None) -> None:
         try:
             for conv_id in list(self._sessions.values()):
-                await self._client.conversations.delete(
-                    conversation_id=conv_id
-                )
+                await self._client.conversations.delete(conv_id)
             self._sessions.clear()
         except Exception as e:
             raise ProviderError("letta", "delete_all", e) from e
 
     @staticmethod
-    def _to_message(letta_msg) -> Message:
+    def _extract_content(letta_msg) -> str:
+        content = getattr(letta_msg, "content", "")
+        if isinstance(content, str):
+            return content
+        if isinstance(content, list):
+            parts = []
+            for item in content:
+                if hasattr(item, "text"):
+                    parts.append(item.text)
+                elif isinstance(item, str):
+                    parts.append(item)
+            return " ".join(parts)
+        return str(content) if content else ""
+
+    @classmethod
+    def _to_message(cls, letta_msg) -> Message:
         timestamp = None
-        if hasattr(letta_msg, "created_at") and letta_msg.created_at:
+        if hasattr(letta_msg, "date") and letta_msg.date:
             try:
-                ts = letta_msg.created_at
-                timestamp = (
-                    ts
-                    if isinstance(ts, datetime)
-                    else datetime.fromisoformat(str(ts))
-                )
+                ts = letta_msg.date
+                timestamp = ts if isinstance(ts, datetime) else datetime.fromisoformat(str(ts))
             except (ValueError, TypeError):
                 pass
+
+        msg_type = getattr(letta_msg, "message_type", "")
+        if msg_type == "user_message":
+            role = "user"
+        elif msg_type == "assistant_message":
+            role = "assistant"
+        else:
+            role = "system"
+
         return Message(
-            role=letta_msg.role,
-            content=getattr(letta_msg, "text", "") or "",
+            role=role,
+            content=cls._extract_content(letta_msg),
             name=getattr(letta_msg, "name", None),
             timestamp=timestamp,
         )

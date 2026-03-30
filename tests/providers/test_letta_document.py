@@ -18,9 +18,9 @@ class TestLettaDocumentAdapter:
         mock_passage = MagicMock()
         mock_passage.id = "d1"
         mock_passage.text = "document content"
-        mock_passage.metadata_ = None
+        mock_passage.metadata = None
         mock_passage.created_at = None
-        mock_client.agents.passages.insert.return_value = mock_passage
+        mock_client.agents.passages.create.return_value = [mock_passage]
         adapter = self._make_adapter(mock_client)
 
         doc = await adapter.add(content="document content")
@@ -34,7 +34,7 @@ class TestLettaDocumentAdapter:
         mock_passage = MagicMock()
         mock_passage.id = "d1"
         mock_passage.text = "document content"
-        mock_passage.metadata_ = {"key": "val"}
+        mock_passage.metadata = {"key": "val"}
         mock_passage.created_at = None
         mock_client.agents.passages.list.return_value = [mock_passage]
         adapter = self._make_adapter(mock_client)
@@ -55,13 +55,12 @@ class TestLettaDocumentAdapter:
 
     async def test_search(self):
         mock_client = AsyncMock()
-        mock_passage = MagicMock()
-        mock_passage.id = "d1"
-        mock_passage.text = "coffee guide"
-        mock_passage.metadata_ = None
-        mock_passage.created_at = None
-        mock_passage.score = 0.9
-        mock_client.agents.passages.search.return_value = [mock_passage]
+        mock_result = MagicMock()
+        mock_result.id = "d1"
+        mock_result.content = "coffee guide"
+        mock_response = MagicMock()
+        mock_response.results = [mock_result]
+        mock_client.agents.passages.search.return_value = mock_response
         adapter = self._make_adapter(mock_client)
 
         results = await adapter.search(query="coffee")
@@ -74,12 +73,12 @@ class TestLettaDocumentAdapter:
         mock_p1 = MagicMock()
         mock_p1.id = "d1"
         mock_p1.text = "doc one"
-        mock_p1.metadata_ = None
+        mock_p1.metadata = None
         mock_p1.created_at = None
         mock_p2 = MagicMock()
         mock_p2.id = "d2"
         mock_p2.text = "doc two"
-        mock_p2.metadata_ = None
+        mock_p2.metadata = None
         mock_p2.created_at = None
         mock_client.agents.passages.list.return_value = [mock_p1, mock_p2]
         adapter = self._make_adapter(mock_client)
@@ -88,19 +87,22 @@ class TestLettaDocumentAdapter:
 
         assert len(results) == 2
 
-    async def test_update(self):
+    async def test_update_emulates_via_delete_and_create(self):
         mock_client = AsyncMock()
         mock_passage = MagicMock()
-        mock_passage.id = "d1"
+        mock_passage.id = "d2"
         mock_passage.text = "updated content"
-        mock_passage.metadata_ = None
+        mock_passage.metadata = None
         mock_passage.created_at = None
-        mock_client.agents.passages.update.return_value = mock_passage
+        mock_client.agents.passages.create.return_value = [mock_passage]
         adapter = self._make_adapter(mock_client)
 
         doc = await adapter.update(doc_id="d1", content="updated content")
 
         assert doc.content == "updated content"
+        mock_client.agents.passages.delete.assert_called_once_with(
+            "d1", agent_id="agent-1",
+        )
 
     async def test_delete(self):
         mock_client = AsyncMock()
@@ -108,7 +110,9 @@ class TestLettaDocumentAdapter:
 
         await adapter.delete(doc_id="d1")
 
-        mock_client.agents.passages.delete.assert_called_once()
+        mock_client.agents.passages.delete.assert_called_once_with(
+            "d1", agent_id="agent-1",
+        )
 
     async def test_delete_all(self):
         mock_client = AsyncMock()

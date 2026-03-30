@@ -2,6 +2,11 @@
 
 Maps memio facts to Letta archival passages (agent-scoped).
 Passages are vector-embedded text chunks stored in the agent's archival memory.
+
+Known quirks:
+- Letta passages API has no update method; update is emulated via delete + create.
+- Search results use a different shape than list results (content vs text).
+- The delete method takes memory_id as a positional arg.
 """
 
 from __future__ import annotations
@@ -51,10 +56,11 @@ class LettaFactAdapter:
         metadata: dict | None = None,
     ) -> Fact:
         try:
-            passage = await self._client.agents.passages.insert(
-                agent_id=self._agent_id,
+            passages = await self._client.agents.passages.create(
+                self._agent_id,
                 text=content,
             )
+            passage = passages[0]
             return self._to_fact(passage, user_id=user_id, agent_id=agent_id)
         except Exception as e:
             raise ProviderError("letta", "add", e) from e
@@ -62,7 +68,7 @@ class LettaFactAdapter:
     async def get(self, *, fact_id: str) -> Fact:
         try:
             passages = await self._client.agents.passages.list(
-                agent_id=self._agent_id,
+                self._agent_id,
             )
             for p in passages:
                 if p.id == fact_id:
@@ -80,9 +86,10 @@ class LettaFactAdapter:
     ) -> list[Fact]:
         try:
             passages = await self._client.agents.passages.list(
-                agent_id=self._agent_id,
+                self._agent_id,
+                limit=limit,
             )
-            return [self._to_fact(p) for p in passages[:limit]]
+            return [self._to_fact(p) for p in passages]
         except Exception as e:
             raise ProviderError("letta", "get_all", e) from e
 
@@ -96,11 +103,12 @@ class LettaFactAdapter:
         filters: dict | None = None,
     ) -> list[Fact]:
         try:
-            passages = await self._client.agents.passages.search(
-                agent_id=self._agent_id,
+            response = await self._client.agents.passages.search(
+                self._agent_id,
                 query=query,
+                top_k=limit,
             )
-            return [self._to_fact(p) for p in passages[:limit]]
+            return [self._search_result_to_fact(r) for r in response.results]
         except Exception as e:
             raise ProviderError("letta", "search", e) from e
 
@@ -112,20 +120,21 @@ class LettaFactAdapter:
         metadata: dict | None = None,
     ) -> Fact:
         try:
-            passage = await self._client.agents.passages.update(
-                agent_id=self._agent_id,
-                passage_id=fact_id,
+            await self._client.agents.passages.delete(
+                fact_id, agent_id=self._agent_id,
+            )
+            passages = await self._client.agents.passages.create(
+                self._agent_id,
                 text=content,
             )
-            return self._to_fact(passage)
+            return self._to_fact(passages[0])
         except Exception as e:
             raise ProviderError("letta", "update", e) from e
 
     async def delete(self, *, fact_id: str) -> None:
         try:
             await self._client.agents.passages.delete(
-                agent_id=self._agent_id,
-                passage_id=fact_id,
+                fact_id, agent_id=self._agent_id,
             )
         except Exception as e:
             raise ProviderError("letta", "delete", e) from e
@@ -138,12 +147,11 @@ class LettaFactAdapter:
     ) -> None:
         try:
             passages = await self._client.agents.passages.list(
-                agent_id=self._agent_id,
+                self._agent_id,
             )
             for p in passages:
                 await self._client.agents.passages.delete(
-                    agent_id=self._agent_id,
-                    passage_id=p.id,
+                    p.id, agent_id=self._agent_id,
                 )
         except Exception as e:
             raise ProviderError("letta", "delete_all", e) from e
@@ -164,7 +172,13 @@ class LettaFactAdapter:
             content=passage.text,
             user_id=user_id,
             agent_id=agent_id,
-            metadata=getattr(passage, "metadata_", None),
-            score=getattr(passage, "score", None),
+            metadata=getattr(passage, "metadata", None),
             created_at=created_at,
+        )
+
+    @staticmethod
+    def _search_result_to_fact(result) -> Fact:
+        return Fact(
+            id=result.id,
+            content=result.content,
         )

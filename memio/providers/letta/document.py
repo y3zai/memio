@@ -2,6 +2,11 @@
 
 Maps memio documents to Letta archival passages (agent-scoped).
 Uses the same passages API as FactStore but oriented toward longer content.
+
+Known quirks:
+- Letta passages API has no update method; update is emulated via delete + create.
+- Search results use a different shape than list results (content vs text).
+- The delete method takes memory_id as a positional arg.
 """
 
 from __future__ import annotations
@@ -50,18 +55,18 @@ class LettaDocumentAdapter:
         metadata: dict | None = None,
     ) -> Document:
         try:
-            passage = await self._client.agents.passages.insert(
-                agent_id=self._agent_id,
+            passages = await self._client.agents.passages.create(
+                self._agent_id,
                 text=content,
             )
-            return self._to_document(passage)
+            return self._to_document(passages[0])
         except Exception as e:
             raise ProviderError("letta", "add", e) from e
 
     async def get(self, *, doc_id: str) -> Document:
         try:
             passages = await self._client.agents.passages.list(
-                agent_id=self._agent_id,
+                self._agent_id,
             )
             for p in passages:
                 if p.id == doc_id:
@@ -78,9 +83,10 @@ class LettaDocumentAdapter:
     ) -> list[Document]:
         try:
             passages = await self._client.agents.passages.list(
-                agent_id=self._agent_id,
+                self._agent_id,
+                limit=limit,
             )
-            return [self._to_document(p) for p in passages[:limit]]
+            return [self._to_document(p) for p in passages]
         except Exception as e:
             raise ProviderError("letta", "get_all", e) from e
 
@@ -92,11 +98,12 @@ class LettaDocumentAdapter:
         filters: dict | None = None,
     ) -> list[Document]:
         try:
-            passages = await self._client.agents.passages.search(
-                agent_id=self._agent_id,
+            response = await self._client.agents.passages.search(
+                self._agent_id,
                 query=query,
+                top_k=limit,
             )
-            return [self._to_document(p) for p in passages[:limit]]
+            return [self._search_result_to_document(r) for r in response.results]
         except Exception as e:
             raise ProviderError("letta", "search", e) from e
 
@@ -108,20 +115,21 @@ class LettaDocumentAdapter:
         metadata: dict | None = None,
     ) -> Document:
         try:
-            passage = await self._client.agents.passages.update(
-                agent_id=self._agent_id,
-                passage_id=doc_id,
+            await self._client.agents.passages.delete(
+                doc_id, agent_id=self._agent_id,
+            )
+            passages = await self._client.agents.passages.create(
+                self._agent_id,
                 text=content,
             )
-            return self._to_document(passage)
+            return self._to_document(passages[0])
         except Exception as e:
             raise ProviderError("letta", "update", e) from e
 
     async def delete(self, *, doc_id: str) -> None:
         try:
             await self._client.agents.passages.delete(
-                agent_id=self._agent_id,
-                passage_id=doc_id,
+                doc_id, agent_id=self._agent_id,
             )
         except Exception as e:
             raise ProviderError("letta", "delete", e) from e
@@ -129,12 +137,11 @@ class LettaDocumentAdapter:
     async def delete_all(self) -> None:
         try:
             passages = await self._client.agents.passages.list(
-                agent_id=self._agent_id,
+                self._agent_id,
             )
             for p in passages:
                 await self._client.agents.passages.delete(
-                    agent_id=self._agent_id,
-                    passage_id=p.id,
+                    p.id, agent_id=self._agent_id,
                 )
         except Exception as e:
             raise ProviderError("letta", "delete_all", e) from e
@@ -151,7 +158,13 @@ class LettaDocumentAdapter:
         return Document(
             id=passage.id,
             content=passage.text,
-            metadata=getattr(passage, "metadata_", None),
-            score=getattr(passage, "score", None),
+            metadata=getattr(passage, "metadata", None),
             created_at=created_at,
+        )
+
+    @staticmethod
+    def _search_result_to_document(result) -> Document:
+        return Document(
+            id=result.id,
+            content=result.content,
         )

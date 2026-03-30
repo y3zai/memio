@@ -18,9 +18,9 @@ class TestLettaFactAdapter:
         mock_passage = MagicMock()
         mock_passage.id = "p1"
         mock_passage.text = "likes coffee"
-        mock_passage.metadata_ = {"source": "test"}
+        mock_passage.metadata = {"source": "test"}
         mock_passage.created_at = None
-        mock_client.agents.passages.insert.return_value = mock_passage
+        mock_client.agents.passages.create.return_value = [mock_passage]
         adapter = self._make_adapter(mock_client)
 
         fact = await adapter.add(content="likes coffee", user_id="u1")
@@ -28,14 +28,14 @@ class TestLettaFactAdapter:
         assert isinstance(fact, Fact)
         assert fact.id == "p1"
         assert fact.content == "likes coffee"
-        mock_client.agents.passages.insert.assert_called_once()
+        mock_client.agents.passages.create.assert_called_once()
 
     async def test_get(self):
         mock_client = AsyncMock()
         mock_passage = MagicMock()
         mock_passage.id = "p1"
         mock_passage.text = "likes coffee"
-        mock_passage.metadata_ = None
+        mock_passage.metadata = None
         mock_passage.created_at = None
         mock_client.agents.passages.list.return_value = [mock_passage]
         adapter = self._make_adapter(mock_client)
@@ -56,31 +56,31 @@ class TestLettaFactAdapter:
 
     async def test_search(self):
         mock_client = AsyncMock()
-        mock_passage = MagicMock()
-        mock_passage.id = "p1"
-        mock_passage.text = "likes coffee"
-        mock_passage.metadata_ = None
-        mock_passage.created_at = None
-        mock_passage.score = 0.95
-        mock_client.agents.passages.search.return_value = [mock_passage]
+        mock_result = MagicMock()
+        mock_result.id = "p1"
+        mock_result.content = "likes coffee"
+        mock_response = MagicMock()
+        mock_response.results = [mock_result]
+        mock_client.agents.passages.search.return_value = mock_response
         adapter = self._make_adapter(mock_client)
 
         results = await adapter.search(query="coffee", user_id="u1")
 
         assert len(results) == 1
         assert results[0].id == "p1"
+        assert results[0].content == "likes coffee"
 
     async def test_get_all(self):
         mock_client = AsyncMock()
         mock_p1 = MagicMock()
         mock_p1.id = "p1"
         mock_p1.text = "fact one"
-        mock_p1.metadata_ = None
+        mock_p1.metadata = None
         mock_p1.created_at = None
         mock_p2 = MagicMock()
         mock_p2.id = "p2"
         mock_p2.text = "fact two"
-        mock_p2.metadata_ = None
+        mock_p2.metadata = None
         mock_p2.created_at = None
         mock_client.agents.passages.list.return_value = [mock_p1, mock_p2]
         adapter = self._make_adapter(mock_client)
@@ -95,7 +95,9 @@ class TestLettaFactAdapter:
 
         await adapter.delete(fact_id="p1")
 
-        mock_client.agents.passages.delete.assert_called_once()
+        mock_client.agents.passages.delete.assert_called_once_with(
+            "p1", agent_id="agent-1",
+        )
 
     async def test_delete_all(self):
         mock_client = AsyncMock()
@@ -110,19 +112,23 @@ class TestLettaFactAdapter:
 
         assert mock_client.agents.passages.delete.call_count == 2
 
-    async def test_update(self):
+    async def test_update_emulates_via_delete_and_create(self):
         mock_client = AsyncMock()
         mock_passage = MagicMock()
-        mock_passage.id = "p1"
+        mock_passage.id = "p2"
         mock_passage.text = "likes tea"
-        mock_passage.metadata_ = None
+        mock_passage.metadata = None
         mock_passage.created_at = None
-        mock_client.agents.passages.update.return_value = mock_passage
+        mock_client.agents.passages.create.return_value = [mock_passage]
         adapter = self._make_adapter(mock_client)
 
         fact = await adapter.update(fact_id="p1", content="likes tea")
 
         assert fact.content == "likes tea"
+        mock_client.agents.passages.delete.assert_called_once_with(
+            "p1", agent_id="agent-1",
+        )
+        mock_client.agents.passages.create.assert_called_once()
 
     async def test_provider_error_wrapping(self):
         mock_client = AsyncMock()
