@@ -6,7 +6,7 @@
 
 Unified memory gateway for AI agents. One interface, multiple memory providers.
 
-memio lets you swap between memory backends (Mem0, Zep, Chroma) without changing your application code. Define what memory capabilities you need — facts, conversation history, documents, knowledge graphs — and plug in any supported provider.
+memio lets you swap between memory backends (Mem0, Zep, Chroma, Letta) without changing your application code. Define what memory capabilities you need — facts, conversation history, documents, knowledge graphs — and plug in any supported provider.
 
 ## Features
 
@@ -29,6 +29,7 @@ Install with providers:
 pip install memio[mem0]      # Mem0 provider
 pip install memio[zep]       # Zep provider
 pip install memio[chroma]    # Chroma provider
+pip install memio[letta]     # Letta provider
 pip install memio[all]       # All providers
 ```
 
@@ -75,12 +76,12 @@ results = await client.documents.search(query="memory")
 
 memio defines four memory store protocols. Each provider implements one or more:
 
-| Store | Purpose | Mem0 | Zep | Chroma |
-|-------|---------|------|-----|--------|
-| `FactStore` | Structured facts about users/agents | yes | yes | - |
-| `HistoryStore` | Conversation message history | - | yes | - |
-| `DocumentStore` | Document storage with semantic search | - | - | yes |
-| `GraphStore` | Knowledge graph triples | yes | yes | - |
+| Store | Purpose | Mem0 | Zep | Chroma | Letta |
+|-------|---------|------|-----|--------|-------|
+| `FactStore` | Structured facts about users/agents | yes | yes | - | yes |
+| `HistoryStore` | Conversation message history | - | yes | - | yes |
+| `DocumentStore` | Document storage with semantic search | - | - | yes | yes |
+| `GraphStore` | Knowledge graph triples | yes | yes | - | - |
 
 ### FactStore
 
@@ -215,6 +216,19 @@ except MemioError:
 **Zep** — graph operations are eventually consistent. `graph.add` sends text to an LLM for asynchronous fact extraction. Individual fact/triple deletion is not supported; use `delete_all` instead.
 
 **Chroma** — uses a local client you provide. No API key required for ephemeral or persistent local usage.
+
+**Letta** — supports both Letta Cloud (`api_key`) and self-hosted (`base_url`). All stores are agent-scoped via `agent_id`. Facts and documents both map to archival passages. No graph support.
+
+```python
+from memio import Memio
+from memio.providers.letta import LettaFactAdapter, LettaHistoryAdapter, LettaDocumentAdapter
+
+client = Memio(
+    facts=LettaFactAdapter(api_key="letta-xxx", agent_id="agent-123"),
+    history=LettaHistoryAdapter(api_key="letta-xxx", agent_id="agent-123"),
+    documents=LettaDocumentAdapter(api_key="letta-xxx", agent_id="agent-123"),
+)
+```
 
 ## Development
 
