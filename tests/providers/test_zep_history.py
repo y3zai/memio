@@ -41,7 +41,9 @@ class TestZepHistoryAdapter:
             Message(role="user", content="hello"),
             Message(role="assistant", content="hi"),
         ]
-        await adapter.add(session_id="s1", messages=messages, user_id="u1")
+        mock_zep_types = MagicMock()
+        with patch.dict("sys.modules", {"zep_cloud.types": mock_zep_types}):
+            await adapter.add(session_id="s1", messages=messages, user_id="u1")
 
         mock_client.user.add.assert_called_once_with(user_id="u1")
         mock_client.thread.create.assert_called_once_with(
@@ -59,7 +61,9 @@ class TestZepHistoryAdapter:
         adapter = self._make_adapter(mock_client)
 
         messages = [Message(role="user", content="hello")]
-        await adapter.add(session_id="s1", messages=messages)
+        mock_zep_types = MagicMock()
+        with patch.dict("sys.modules", {"zep_cloud.types": mock_zep_types}):
+            await adapter.add(session_id="s1", messages=messages)
 
         mock_client.user.add.assert_called_once_with(user_id="s1")
 
