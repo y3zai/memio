@@ -2,7 +2,7 @@
 
 **Unified memory gateway for AI agents.**
 
-memio lets you swap between memory backends -- Mem0, Zep, and Chroma -- without changing your application code. Define what memory capabilities you need (facts, conversation history, documents, knowledge graphs) and plug in any supported provider.
+memio lets you swap between memory backends -- Mem0, Zep, Chroma, Qdrant, Letta, and Supermemory -- without changing your application code. Define what memory capabilities you need (facts, conversation history, documents, knowledge graphs) and plug in any supported provider.
 
 ## Why memio?
 
@@ -69,12 +69,12 @@ asyncio.run(main())
 
 memio defines four memory store protocols. Each provider implements one or more:
 
-| Store | Purpose | Mem0 | Zep | Chroma |
-|-------|---------|------|-----|--------|
-| `FactStore` | Structured facts about users/agents | yes | yes | -- |
-| `HistoryStore` | Conversation message history | -- | yes | -- |
-| `DocumentStore` | Document storage with semantic search | -- | -- | yes |
-| `GraphStore` | Knowledge graph triples | yes | yes | -- |
+| Store | Purpose | Mem0 | Zep | Chroma | Qdrant | Letta | Supermemory |
+|-------|---------|------|-----|--------|--------|-------|-------------|
+| `FactStore` | Structured facts about users/agents | yes | yes | -- | -- | yes | yes |
+| `HistoryStore` | Conversation message history | -- | yes | -- | -- | yes | -- |
+| `DocumentStore` | Document storage with semantic search | -- | -- | yes | yes | yes | yes |
+| `GraphStore` | Knowledge graph triples | yes | yes | -- | -- | -- | -- |
 
 ## Next steps
 

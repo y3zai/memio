@@ -42,13 +42,37 @@ Each memory provider is an optional extra. Install only what you need:
 
     Installs `zep-cloud`. Requires a Zep API key.
 
+=== "Letta"
+
+    ```bash
+    pip install memio[letta]
+    ```
+
+    Installs `letta-client`. Requires a Letta API key or self-hosted server.
+
+=== "Qdrant"
+
+    ```bash
+    pip install memio[qdrant]
+    ```
+
+    Installs `qdrant-client[fastembed]`. Runs locally with no API key required.
+
+=== "Supermemory"
+
+    ```bash
+    pip install memio[supermemory]
+    ```
+
+    Installs `supermemory`. Requires a Supermemory API key.
+
 === "All providers"
 
     ```bash
     pip install memio[all]
     ```
 
-    Installs all three providers at once.
+    Installs all providers at once.
 
 ## Development install
 
@@ -81,6 +105,9 @@ To verify a specific provider is available:
 python -c "from memio.providers.chroma import ChromaDocumentAdapter; print('chroma ready')"
 python -c "from memio.providers.mem0 import Mem0FactAdapter; print('mem0 ready')"
 python -c "from memio.providers.zep import ZepHistoryAdapter; print('zep ready')"
+python -c "from memio.providers.letta import LettaFactAdapter; print('letta ready')"
+python -c "from memio.providers.qdrant import QdrantDocumentAdapter; print('qdrant ready')"
+python -c "from memio.providers.supermemory import SupermemoryFactAdapter; print('supermemory ready')"
 ```
 
 ## Next steps

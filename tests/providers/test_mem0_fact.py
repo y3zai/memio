@@ -14,11 +14,12 @@ def _mock_mem0_module():
 
 
 class TestMem0FactAdapter:
-    def _make_adapter(self, mock_client):
+    def _make_adapter(self, mock_client, *, is_cloud=False):
         with patch.dict("sys.modules", {"mem0": MagicMock()}):
             from memio.providers.mem0.fact import Mem0FactAdapter
             adapter = Mem0FactAdapter.__new__(Mem0FactAdapter)
             adapter._client = mock_client
+            adapter._is_cloud = is_cloud
         return adapter
 
     async def test_add(self):
@@ -34,6 +35,26 @@ class TestMem0FactAdapter:
         assert fact.id == "m1"
         assert fact.content == "likes coffee"
         mock_client.add.assert_called_once()
+
+    async def test_add_cloud_polls_until_ready(self):
+        mock_client = AsyncMock()
+        # Cloud add returns PENDING with no id
+        mock_client.add.return_value = {
+            "results": [{"status": "PENDING", "event_id": "evt-1", "id": None, "memory": None}]
+        }
+        ready_result = {"results": [{"id": "real-1", "memory": "User likes coffee", "user_id": "u1"}]}
+        # First call: snapshot (empty), second: poll (empty), third: poll (ready)
+        mock_client.get_all.side_effect = [
+            {"results": []},
+            {"results": []},
+            ready_result,
+        ]
+        adapter = self._make_adapter(mock_client, is_cloud=True)
+
+        fact = await adapter.add(content="likes coffee", user_id="u1")
+
+        assert fact.id == "real-1"
+        assert fact.content == "User likes coffee"
 
     async def test_get(self):
         mock_client = AsyncMock()

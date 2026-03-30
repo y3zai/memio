@@ -59,6 +59,9 @@ nav:
     - Mem0: providers/mem0.md
     - Zep: providers/zep.md
     - Chroma: providers/chroma.md
+    - Letta: providers/letta.md
+    - Qdrant: providers/qdrant.md
+    - Supermemory: providers/supermemory.md
   - Guides:
     - Custom Providers: guides/custom-providers.md
   - API Reference:
@@ -69,6 +72,9 @@ nav:
     - Mem0 Adapters: api/providers-mem0.md
     - Zep Adapters: api/providers-zep.md
     - Chroma Adapters: api/providers-chroma.md
+    - Letta Adapters: api/providers-letta.md
+    - Qdrant Adapters: api/providers-qdrant.md
+    - Supermemory Adapters: api/providers-supermemory.md
   - Contributing:
     - Development: contributing/development.md
     - Adding Providers: contributing/adding-providers.md
