@@ -91,7 +91,11 @@ class TestZepHistoryAdapter:
         mock_episode.content = "hello there"
         mock_results = MagicMock()
         mock_results.episodes = [mock_episode]
+        mock_thread = MagicMock()
+        mock_thread.user_id = "u1"
         mock_client = MagicMock()
+        mock_client.thread = MagicMock()
+        mock_client.thread.get = AsyncMock(return_value=mock_thread)
         mock_client.graph = MagicMock()
         mock_client.graph.search = AsyncMock(return_value=mock_results)
         adapter = self._make_adapter(mock_client)
@@ -100,9 +104,10 @@ class TestZepHistoryAdapter:
 
         assert len(messages) == 1
         assert messages[0].content == "hello there"
-        # Falls back to session_id as user_id when no owner is tracked
+        # Derives owner from Zep thread metadata on cache miss
+        mock_client.thread.get.assert_called_once_with(thread_id="s1")
         mock_client.graph.search.assert_called_once_with(
-            query="hello", user_id="s1", limit=10,
+            query="hello", user_id="u1", limit=10,
         )
 
     async def test_search_uses_tracked_owner(self):

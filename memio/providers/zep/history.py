@@ -98,7 +98,17 @@ class ZepHistoryAdapter:
         limit: int = 10,
     ) -> list[Message]:
         try:
-            owner = self._session_owners.get(session_id, session_id)
+            owner = self._session_owners.get(session_id)
+            if owner is None:
+                # Derive owner from Zep thread metadata when cache misses
+                try:
+                    thread = _unwrap(
+                        await self._client.thread.get(thread_id=session_id)
+                    )
+                    owner = getattr(thread, "user_id", None) or session_id
+                    self._session_owners[session_id] = owner
+                except Exception:
+                    owner = session_id
             response = _unwrap(await self._client.graph.search(
                 query=query, user_id=owner, limit=limit,
             ))

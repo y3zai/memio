@@ -11,6 +11,7 @@ Known quirks:
 
 from __future__ import annotations
 
+from collections import OrderedDict
 from datetime import datetime
 
 from memio.exceptions import NotSupportedError, ProviderError
@@ -37,7 +38,14 @@ class SupermemoryFactAdapter:
         if api_key:
             kwargs["api_key"] = api_key
         self._client = AsyncSupermemory(**kwargs)
-        self._fact_tags: dict[str, str] = {}  # fact_id -> container_tag
+        self._fact_tags: OrderedDict[str, str] = OrderedDict()  # fact_id -> container_tag (LRU, max 10k)
+        self._fact_tags_max = 10_000
+
+    def _cache_tag(self, fact_id: str, tag: str) -> None:
+        self._fact_tags[fact_id] = tag
+        self._fact_tags.move_to_end(fact_id)
+        if len(self._fact_tags) > self._fact_tags_max:
+            self._fact_tags.popitem(last=False)
 
     def _container_tag(
         self, user_id: str | None, agent_id: str | None,
@@ -63,7 +71,7 @@ class SupermemoryFactAdapter:
                 kwargs["metadata"] = metadata
             result = await self._client.add(**kwargs)
             if tag:
-                self._fact_tags[result.id] = tag
+                self._cache_tag(result.id, tag)
             return Fact(
                 id=result.id,
                 content=content,
@@ -97,7 +105,7 @@ class SupermemoryFactAdapter:
             facts = []
             for r in result.results:
                 if tag:
-                    self._fact_tags[r.id] = tag
+                    self._cache_tag(r.id, tag)
                 facts.append(self._to_fact(r, user_id, agent_id))
             return facts
         except Exception as e:
@@ -125,7 +133,7 @@ class SupermemoryFactAdapter:
             facts = []
             for r in result.results:
                 if tag:
-                    self._fact_tags[r.id] = tag
+                    self._cache_tag(r.id, tag)
                 facts.append(self._to_fact(r, user_id, agent_id))
             return facts
         except Exception as e:

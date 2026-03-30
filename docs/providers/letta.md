@@ -59,8 +59,8 @@ client = Memio(
     facts=LettaFactAdapter(api_key="letta-xxx", agent_id="agent-123"),
 )
 
-fact = await client.facts.add(content="likes coffee", user_id="alice")
-results = await client.facts.search(query="coffee", user_id="alice")
+fact = await client.facts.add(content="likes coffee")
+results = await client.facts.search(query="coffee")
 await client.facts.delete(fact_id=fact.id)
 ```
 

@@ -18,10 +18,12 @@ def _make_mock_result(id, memory, similarity=0.9, updated_at=None, metadata=None
 class TestSupermemoryFactAdapter:
     def _make_adapter(self, mock_client):
         with patch.dict("sys.modules", {"supermemory": MagicMock()}):
+            from collections import OrderedDict
             from memio.providers.supermemory.fact import SupermemoryFactAdapter
             adapter = SupermemoryFactAdapter.__new__(SupermemoryFactAdapter)
             adapter._client = mock_client
-            adapter._fact_tags = {}
+            adapter._fact_tags = OrderedDict()
+            adapter._fact_tags_max = 10_000
         return adapter
 
     async def test_add(self):
