@@ -39,16 +39,21 @@ class ZepHistoryAdapter:
             self._client = client
         else:
             self._client = AsyncZep(api_key=api_key)
+        self._session_owners: dict[str, str] = {}  # session_id -> user_id
 
-    async def add(self, *, session_id: str, messages: list[Message]) -> None:
+    async def add(self, *, session_id: str, messages: list[Message],
+                  user_id: str | None = None) -> None:
         try:
+            # Use explicit user_id when provided, fall back to session_id
+            owner = user_id or session_id
+            self._session_owners[session_id] = owner
             # Ensure user and thread exist
             try:
-                await self._client.user.add(user_id=session_id)
+                await self._client.user.add(user_id=owner)
             except Exception:
                 pass  # User may already exist
             try:
-                await self._client.thread.create(thread_id=session_id, user_id=session_id)
+                await self._client.thread.create(thread_id=session_id, user_id=owner)
             except Exception:
                 pass  # Thread may already exist
 
@@ -93,8 +98,19 @@ class ZepHistoryAdapter:
         limit: int = 10,
     ) -> list[Message]:
         try:
+            owner = self._session_owners.get(session_id)
+            if owner is None:
+                # Derive owner from Zep thread metadata when cache misses
+                try:
+                    thread = _unwrap(
+                        await self._client.thread.get(thread_id=session_id)
+                    )
+                    owner = getattr(thread, "user_id", None) or session_id
+                    self._session_owners[session_id] = owner
+                except Exception:
+                    owner = session_id
             response = _unwrap(await self._client.graph.search(
-                query=query, user_id=session_id, limit=limit,
+                query=query, user_id=owner, limit=limit,
             ))
             results = []
             for episode in response.episodes or []:
@@ -111,6 +127,7 @@ class ZepHistoryAdapter:
 
     async def delete(self, *, session_id: str) -> None:
         try:
+            self._session_owners.pop(session_id, None)
             await self._client.thread.delete(session_id)
         except Exception as e:
             raise ProviderError("zep", "delete", e) from e
@@ -140,6 +157,13 @@ class ZepHistoryAdapter:
     async def delete_all(self, *, user_id: str | None = None) -> None:
         try:
             if user_id:
+                # Remove cached owners for sessions belonging to this user
+                to_remove = [
+                    sid for sid, uid in self._session_owners.items()
+                    if uid == user_id
+                ]
+                for sid in to_remove:
+                    self._session_owners.pop(sid, None)
                 try:
                     await self._client.user.delete(user_id)
                 except Exception as inner:

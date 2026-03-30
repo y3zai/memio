@@ -25,10 +25,13 @@ class TestZepHistoryAdapter:
             from memio.providers.zep.history import ZepHistoryAdapter
             adapter = ZepHistoryAdapter.__new__(ZepHistoryAdapter)
             adapter._client = mock_client
+            adapter._session_owners = {}
         return adapter
 
     async def test_add(self):
         mock_client = MagicMock()
+        mock_client.user = MagicMock()
+        mock_client.user.add = AsyncMock()
         mock_client.thread = MagicMock()
         mock_client.thread.create = AsyncMock()
         mock_client.thread.add_messages = AsyncMock()
@@ -38,9 +41,31 @@ class TestZepHistoryAdapter:
             Message(role="user", content="hello"),
             Message(role="assistant", content="hi"),
         ]
-        await adapter.add(session_id="s1", messages=messages)
+        mock_zep_types = MagicMock()
+        with patch.dict("sys.modules", {"zep_cloud.types": mock_zep_types}):
+            await adapter.add(session_id="s1", messages=messages, user_id="u1")
 
+        mock_client.user.add.assert_called_once_with(user_id="u1")
+        mock_client.thread.create.assert_called_once_with(
+            thread_id="s1", user_id="u1",
+        )
         mock_client.thread.add_messages.assert_called_once()
+
+    async def test_add_falls_back_to_session_id(self):
+        mock_client = MagicMock()
+        mock_client.user = MagicMock()
+        mock_client.user.add = AsyncMock()
+        mock_client.thread = MagicMock()
+        mock_client.thread.create = AsyncMock()
+        mock_client.thread.add_messages = AsyncMock()
+        adapter = self._make_adapter(mock_client)
+
+        messages = [Message(role="user", content="hello")]
+        mock_zep_types = MagicMock()
+        with patch.dict("sys.modules", {"zep_cloud.types": mock_zep_types}):
+            await adapter.add(session_id="s1", messages=messages)
+
+        mock_client.user.add.assert_called_once_with(user_id="s1")
 
     async def test_get(self):
         mock_response = MagicMock()
@@ -66,7 +91,11 @@ class TestZepHistoryAdapter:
         mock_episode.content = "hello there"
         mock_results = MagicMock()
         mock_results.episodes = [mock_episode]
+        mock_thread = MagicMock()
+        mock_thread.user_id = "u1"
         mock_client = MagicMock()
+        mock_client.thread = MagicMock()
+        mock_client.thread.get = AsyncMock(return_value=mock_thread)
         mock_client.graph = MagicMock()
         mock_client.graph.search = AsyncMock(return_value=mock_results)
         adapter = self._make_adapter(mock_client)
@@ -75,6 +104,30 @@ class TestZepHistoryAdapter:
 
         assert len(messages) == 1
         assert messages[0].content == "hello there"
+        # Derives owner from Zep thread metadata on cache miss
+        mock_client.thread.get.assert_called_once_with(thread_id="s1")
+        mock_client.graph.search.assert_called_once_with(
+            query="hello", user_id="u1", limit=10,
+        )
+
+    async def test_search_uses_tracked_owner(self):
+        mock_episode = MagicMock()
+        mock_episode.thread_id = "s1"
+        mock_episode.role = "user"
+        mock_episode.content = "hello"
+        mock_results = MagicMock()
+        mock_results.episodes = [mock_episode]
+        mock_client = MagicMock()
+        mock_client.graph = MagicMock()
+        mock_client.graph.search = AsyncMock(return_value=mock_results)
+        adapter = self._make_adapter(mock_client)
+        adapter._session_owners = {"s1": "u1"}
+
+        await adapter.search(session_id="s1", query="hello")
+
+        mock_client.graph.search.assert_called_once_with(
+            query="hello", user_id="u1", limit=10,
+        )
 
     async def test_search_filters_by_session(self):
         ep1 = MagicMock()

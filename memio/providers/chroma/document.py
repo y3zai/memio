@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import uuid
 from datetime import datetime, timezone
 
@@ -12,6 +13,8 @@ class ChromaDocumentAdapter:
 
     Uses a chromadb collection for vector storage and semantic search.
     Similarity scores are computed as ``1.0 / (1.0 + distance)``.
+    All synchronous chromadb calls are offloaded to a thread to avoid
+    blocking the event loop.
 
     Args:
         client: A chromadb client instance (EphemeralClient or PersistentClient).
@@ -34,7 +37,7 @@ class ChromaDocumentAdapter:
             kwargs: dict = {"ids": [doc_id], "documents": [content]}
             if metadata is not None:
                 kwargs["metadatas"] = [metadata]
-            self._collection.add(**kwargs)
+            await asyncio.to_thread(self._collection.add, **kwargs)
             return Document(id=doc_id, content=content, metadata=metadata,
                           created_at=datetime.now(timezone.utc))
         except Exception as e:
@@ -42,7 +45,7 @@ class ChromaDocumentAdapter:
 
     async def get(self, *, doc_id: str) -> Document:
         try:
-            result = self._collection.get(ids=[doc_id])
+            result = await asyncio.to_thread(self._collection.get, ids=[doc_id])
             return Document(
                 id=result["ids"][0],
                 content=result["documents"][0],
@@ -57,7 +60,7 @@ class ChromaDocumentAdapter:
             kwargs: dict = {"query_texts": [query], "n_results": limit}
             if filters is not None:
                 kwargs["where"] = filters
-            result = self._collection.query(**kwargs)
+            result = await asyncio.to_thread(self._collection.query, **kwargs)
             docs = []
             for i, doc_id in enumerate(result["ids"][0]):
                 distance = result["distances"][0][i] if result.get("distances") else None
@@ -78,7 +81,7 @@ class ChromaDocumentAdapter:
             kwargs: dict = {"ids": [doc_id], "documents": [content]}
             if metadata is not None:
                 kwargs["metadatas"] = [metadata]
-            self._collection.update(**kwargs)
+            await asyncio.to_thread(self._collection.update, **kwargs)
             return Document(id=doc_id, content=content, metadata=metadata,
                           updated_at=datetime.now(timezone.utc))
         except Exception as e:
@@ -86,7 +89,7 @@ class ChromaDocumentAdapter:
 
     async def delete(self, *, doc_id: str) -> None:
         try:
-            self._collection.delete(ids=[doc_id])
+            await asyncio.to_thread(self._collection.delete, ids=[doc_id])
         except Exception as e:
             raise ProviderError("chroma", "delete", e) from e
 
@@ -96,7 +99,7 @@ class ChromaDocumentAdapter:
             kwargs: dict = {"limit": limit}
             if filters is not None:
                 kwargs["where"] = filters
-            result = self._collection.get(**kwargs)
+            result = await asyncio.to_thread(self._collection.get, **kwargs)
             docs = []
             for i, doc_id in enumerate(result["ids"]):
                 docs.append(Document(
@@ -110,8 +113,8 @@ class ChromaDocumentAdapter:
 
     async def delete_all(self) -> None:
         try:
-            result = self._collection.get()
+            result = await asyncio.to_thread(self._collection.get)
             if result["ids"]:
-                self._collection.delete(ids=result["ids"])
+                await asyncio.to_thread(self._collection.delete, ids=result["ids"])
         except Exception as e:
             raise ProviderError("chroma", "delete_all", e) from e

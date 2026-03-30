@@ -22,7 +22,7 @@ class FakeFactStore:
 
 
 class FakeHistoryStore:
-    async def add(self, *, session_id, messages):
+    async def add(self, *, session_id, messages, user_id=None):
         pass
     async def get(self, *, session_id, limit=50, cursor=None):
         return []

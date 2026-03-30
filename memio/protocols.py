@@ -36,7 +36,8 @@ class HistoryStore(Protocol):
     all methods as async.
     """
 
-    async def add(self, *, session_id: str, messages: list[Message]) -> None: ...
+    async def add(self, *, session_id: str, messages: list[Message],
+                  user_id: str | None = None) -> None: ...
     async def get(self, *, session_id: str, limit: int = 50,
                   cursor: str | None = None) -> list[Message]: ...
     async def get_all(self, *, user_id: str | None = None,

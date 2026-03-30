@@ -55,8 +55,10 @@ class LettaHistoryAdapter:
         self._client = AsyncLetta(**kwargs)
         self._agent_id = agent_id
         self._sessions: dict[str, str] = {}  # session_id -> conversation_id
+        self._session_owners: dict[str, str] = {}  # session_id -> user_id
 
-    async def add(self, *, session_id: str, messages: list[Message]) -> None:
+    async def add(self, *, session_id: str, messages: list[Message],
+                  user_id: str | None = None) -> None:
         try:
             conv_id = self._sessions.get(session_id)
             if conv_id is None:
@@ -65,6 +67,8 @@ class LettaHistoryAdapter:
                 )
                 conv_id = conv.id
                 self._sessions[session_id] = conv_id
+            if user_id is not None:
+                self._session_owners[session_id] = user_id
 
             letta_messages = [
                 {"role": m.role, "content": m.content, "name": m.name}
@@ -141,6 +145,7 @@ class LettaHistoryAdapter:
     async def delete(self, *, session_id: str) -> None:
         try:
             conv_id = self._sessions.pop(session_id, None)
+            self._session_owners.pop(session_id, None)
             if conv_id:
                 await self._client.conversations.delete(conv_id)
         except Exception as e:
@@ -153,15 +158,29 @@ class LettaHistoryAdapter:
         limit: int = 100,
     ) -> list[str]:
         try:
+            if user_id is not None:
+                return [
+                    sid for sid, uid in self._session_owners.items()
+                    if uid == user_id
+                ][:limit]
             return list(self._sessions.keys())[:limit]
         except Exception as e:
             raise ProviderError("letta", "get_all", e) from e
 
     async def delete_all(self, *, user_id: str | None = None) -> None:
         try:
-            for conv_id in list(self._sessions.values()):
-                await self._client.conversations.delete(conv_id)
-            self._sessions.clear()
+            if user_id is not None:
+                to_delete = [
+                    sid for sid, uid in self._session_owners.items()
+                    if uid == user_id
+                ]
+            else:
+                to_delete = list(self._sessions.keys())
+            for sid in to_delete:
+                conv_id = self._sessions.pop(sid, None)
+                self._session_owners.pop(sid, None)
+                if conv_id:
+                    await self._client.conversations.delete(conv_id)
         except Exception as e:
             raise ProviderError("letta", "delete_all", e) from e
 

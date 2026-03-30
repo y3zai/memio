@@ -11,6 +11,7 @@ Known quirks:
 
 from __future__ import annotations
 
+from collections import OrderedDict
 from datetime import datetime
 
 from memio.exceptions import NotSupportedError, ProviderError
@@ -37,6 +38,14 @@ class SupermemoryFactAdapter:
         if api_key:
             kwargs["api_key"] = api_key
         self._client = AsyncSupermemory(**kwargs)
+        self._fact_tags: OrderedDict[str, str] = OrderedDict()  # fact_id -> container_tag (LRU, max 10k)
+        self._fact_tags_max = 10_000
+
+    def _cache_tag(self, fact_id: str, tag: str) -> None:
+        self._fact_tags[fact_id] = tag
+        self._fact_tags.move_to_end(fact_id)
+        if len(self._fact_tags) > self._fact_tags_max:
+            self._fact_tags.popitem(last=False)
 
     def _container_tag(
         self, user_id: str | None, agent_id: str | None,
@@ -61,6 +70,8 @@ class SupermemoryFactAdapter:
             if metadata:
                 kwargs["metadata"] = metadata
             result = await self._client.add(**kwargs)
+            if tag:
+                self._cache_tag(result.id, tag)
             return Fact(
                 id=result.id,
                 content=content,
@@ -91,7 +102,12 @@ class SupermemoryFactAdapter:
             if tag:
                 kwargs["container_tag"] = tag
             result = await self._client.search.memories(**kwargs)
-            return [self._to_fact(r, user_id, agent_id) for r in result.results]
+            facts = []
+            for r in result.results:
+                if tag:
+                    self._cache_tag(r.id, tag)
+                facts.append(self._to_fact(r, user_id, agent_id))
+            return facts
         except Exception as e:
             raise ProviderError("supermemory", "get_all", e) from e
 
@@ -114,7 +130,12 @@ class SupermemoryFactAdapter:
             if filters:
                 kwargs["filters"] = filters
             result = await self._client.search.memories(**kwargs)
-            return [self._to_fact(r, user_id, agent_id) for r in result.results]
+            facts = []
+            for r in result.results:
+                if tag:
+                    self._cache_tag(r.id, tag)
+                facts.append(self._to_fact(r, user_id, agent_id))
+            return facts
         except Exception as e:
             raise ProviderError("supermemory", "search", e) from e
 
@@ -126,10 +147,11 @@ class SupermemoryFactAdapter:
         metadata: dict | None = None,
     ) -> Fact:
         try:
+            tag = self._fact_tags.get(fact_id, "")
             kwargs: dict = {
                 "id": fact_id,
                 "new_content": content,
-                "container_tag": "",
+                "container_tag": tag,
             }
             if metadata:
                 kwargs["metadata"] = metadata
@@ -140,8 +162,9 @@ class SupermemoryFactAdapter:
 
     async def delete(self, *, fact_id: str) -> None:
         try:
+            tag = self._fact_tags.pop(fact_id, "")
             await self._client.memories.forget(
-                container_tag="", id=fact_id,
+                container_tag=tag, id=fact_id,
             )
         except Exception as e:
             raise ProviderError("supermemory", "delete", e) from e

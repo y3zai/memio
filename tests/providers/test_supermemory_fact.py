@@ -18,9 +18,12 @@ def _make_mock_result(id, memory, similarity=0.9, updated_at=None, metadata=None
 class TestSupermemoryFactAdapter:
     def _make_adapter(self, mock_client):
         with patch.dict("sys.modules", {"supermemory": MagicMock()}):
+            from collections import OrderedDict
             from memio.providers.supermemory.fact import SupermemoryFactAdapter
             adapter = SupermemoryFactAdapter.__new__(SupermemoryFactAdapter)
             adapter._client = mock_client
+            adapter._fact_tags = OrderedDict()
+            adapter._fact_tags_max = 10_000
         return adapter
 
     async def test_add(self):
@@ -136,27 +139,61 @@ class TestSupermemoryFactAdapter:
             container_tag="u1", filters={"source": "chat"},
         )
 
-    async def test_update(self):
+    async def test_update_uses_cached_tag(self):
         mock_client = AsyncMock()
         adapter = self._make_adapter(mock_client)
+        adapter._fact_tags["sm-1"] = "u1"
 
         fact = await adapter.update(fact_id="sm-1", content="likes tea")
 
         assert fact.id == "sm-1"
         assert fact.content == "likes tea"
         mock_client.memories.update_memory.assert_called_once_with(
-            id="sm-1", new_content="likes tea", container_tag="",
+            id="sm-1", new_content="likes tea", container_tag="u1",
         )
 
-    async def test_delete(self):
+    async def test_update_falls_back_to_empty_tag(self):
         mock_client = AsyncMock()
         adapter = self._make_adapter(mock_client)
+
+        await adapter.update(fact_id="sm-unknown", content="test")
+
+        mock_client.memories.update_memory.assert_called_once_with(
+            id="sm-unknown", new_content="test", container_tag="",
+        )
+
+    async def test_delete_uses_cached_tag(self):
+        mock_client = AsyncMock()
+        adapter = self._make_adapter(mock_client)
+        adapter._fact_tags["sm-1"] = "u1"
 
         await adapter.delete(fact_id="sm-1")
 
         mock_client.memories.forget.assert_called_once_with(
-            container_tag="", id="sm-1",
+            container_tag="u1", id="sm-1",
         )
+        assert "sm-1" not in adapter._fact_tags
+
+    async def test_delete_falls_back_to_empty_tag(self):
+        mock_client = AsyncMock()
+        adapter = self._make_adapter(mock_client)
+
+        await adapter.delete(fact_id="sm-unknown")
+
+        mock_client.memories.forget.assert_called_once_with(
+            container_tag="", id="sm-unknown",
+        )
+
+    async def test_add_caches_tag(self):
+        mock_client = AsyncMock()
+        mock_add_response = MagicMock()
+        mock_add_response.id = "sm-10"
+        mock_client.add.return_value = mock_add_response
+        adapter = self._make_adapter(mock_client)
+
+        await adapter.add(content="test", user_id="u1", agent_id="a1")
+
+        assert adapter._fact_tags["sm-10"] == "u1--a1"
 
     async def test_delete_all_raises_not_supported(self):
         mock_client = AsyncMock()

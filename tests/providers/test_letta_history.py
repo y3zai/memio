@@ -12,6 +12,7 @@ class TestLettaHistoryAdapter:
             adapter._client = mock_client
             adapter._agent_id = "agent-1"
             adapter._sessions = {}
+            adapter._session_owners = {}
         return adapter
 
     async def test_add(self):
@@ -26,10 +27,11 @@ class TestLettaHistoryAdapter:
         adapter = self._make_adapter(mock_client)
 
         messages = [Message(role="user", content="hello")]
-        await adapter.add(session_id="s1", messages=messages)
+        await adapter.add(session_id="s1", messages=messages, user_id="u1")
 
         mock_client.conversations.messages.create.assert_called_once()
         assert adapter._sessions["s1"] == "conv-1"
+        assert adapter._session_owners["s1"] == "u1"
 
     async def test_add_reuses_existing_conversation(self):
         mock_client = AsyncMock()
@@ -118,24 +120,48 @@ class TestLettaHistoryAdapter:
         mock_client.conversations.delete.assert_called_once_with("conv-1")
         assert "s1" not in adapter._sessions
 
-    async def test_get_all(self):
+    async def test_get_all_scoped_by_user(self):
         mock_client = AsyncMock()
         adapter = self._make_adapter(mock_client)
-        adapter._sessions = {"s1": "conv-1", "s2": "conv-2"}
+        adapter._sessions = {"s1": "conv-1", "s2": "conv-2", "s3": "conv-3"}
+        adapter._session_owners = {"s1": "u1", "s2": "u1", "s3": "u2"}
 
         results = await adapter.get_all(user_id="u1")
 
-        assert len(results) == 2
+        assert sorted(results) == ["s1", "s2"]
 
-    async def test_delete_all(self):
+    async def test_get_all_no_user_returns_all(self):
         mock_client = AsyncMock()
         adapter = self._make_adapter(mock_client)
         adapter._sessions = {"s1": "conv-1", "s2": "conv-2"}
+
+        results = await adapter.get_all()
+
+        assert len(results) == 2
+
+    async def test_delete_all_scoped_by_user(self):
+        mock_client = AsyncMock()
+        adapter = self._make_adapter(mock_client)
+        adapter._sessions = {"s1": "conv-1", "s2": "conv-2", "s3": "conv-3"}
+        adapter._session_owners = {"s1": "u1", "s2": "u1", "s3": "u2"}
 
         await adapter.delete_all(user_id="u1")
 
         assert mock_client.conversations.delete.call_count == 2
+        assert "s3" in adapter._sessions
+        assert "s1" not in adapter._sessions
+
+    async def test_delete_all_no_user_deletes_all(self):
+        mock_client = AsyncMock()
+        adapter = self._make_adapter(mock_client)
+        adapter._sessions = {"s1": "conv-1", "s2": "conv-2"}
+        adapter._session_owners = {"s1": "u1", "s2": "u2"}
+
+        await adapter.delete_all()
+
+        assert mock_client.conversations.delete.call_count == 2
         assert adapter._sessions == {}
+        assert adapter._session_owners == {}
 
     async def test_provider_error_wrapping(self):
         mock_client = AsyncMock()

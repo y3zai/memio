@@ -107,6 +107,7 @@ client = Memio(history=ZepHistoryAdapter(api_key="z_..."))
 # Add messages to a session
 await client.history.add(
     session_id="session-1",
+    user_id="alice",
     messages=[
         Message(role="user", content="What is memio?"),
         Message(role="assistant", content="A unified memory gateway."),
@@ -125,13 +126,13 @@ results = await client.history.search(
 )
 
 # List all session IDs for a user
-sessions = await client.history.get_all(user_id="session-1")
+sessions = await client.history.get_all(user_id="alice")
 
 # Delete a single session (thread)
 await client.history.delete(session_id="session-1")
 
 # Delete all sessions for a user (deletes the user in Zep)
-await client.history.delete_all(user_id="session-1")
+await client.history.delete_all(user_id="alice")
 ```
 
 ## GraphStore -- ZepGraphAdapter
