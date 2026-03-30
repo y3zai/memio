@@ -3,16 +3,20 @@
 Known quirks:
 - Mem0's LLM may rephrase content (e.g. "likes coffee" → "User likes coffee")
 - Adding duplicate content returns empty results (deduplicated automatically)
-- Mem0 Cloud processes memories asynchronously; ``add`` returns an event_id
-  while the memory is created in the background.
+- Mem0 Cloud processes memories asynchronously; ``add`` polls until the
+  memory is ready so callers always receive a usable Fact.
 """
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
 
 from memio.exceptions import ProviderError
 from memio.models import Fact
+
+_POLL_INTERVAL = 1.0  # seconds between polls
+_POLL_TIMEOUT = 60.0  # max seconds to wait for async processing
 
 
 class Mem0FactAdapter:
@@ -74,6 +78,15 @@ class Mem0FactAdapter:
                 kwargs["agent_id"] = agent_id
             if metadata:
                 kwargs["metadata"] = metadata
+
+            # Snapshot existing IDs so we can detect the new memory later.
+            if self._is_cloud:
+                existing_ids = {
+                    f.id for f in await self.get_all(
+                        user_id=user_id, agent_id=agent_id,
+                    )
+                }
+
             result = await self._client.add(**kwargs)
             entries = result.get("results", [])
             if not entries:
@@ -82,19 +95,45 @@ class Mem0FactAdapter:
                     "(deduplicated)"
                 )
             entry = entries[0]
-            # Mem0 Cloud returns PENDING with an event_id; the actual
-            # memory is created asynchronously.
-            fact_id = entry.get("id") or entry.get("event_id")
-            fact_content = entry.get("memory") or content
+
+            # Mem0 Cloud processes memories asynchronously — poll until
+            # the new memory appears so we can return a real Fact.
+            if self._is_cloud and entry.get("id") is None:
+                return await self._poll_for_new_fact(
+                    existing_ids=existing_ids,
+                    user_id=user_id,
+                    agent_id=agent_id,
+                )
+
             return Fact(
-                id=fact_id,
-                content=fact_content,
+                id=entry["id"],
+                content=entry["memory"],
                 user_id=user_id,
                 agent_id=agent_id,
                 metadata=metadata,
             )
         except Exception as e:
             raise ProviderError("mem0", "add", e) from e
+
+    async def _poll_for_new_fact(
+        self,
+        *,
+        existing_ids: set[str],
+        user_id: str | None,
+        agent_id: str | None,
+    ) -> Fact:
+        """Poll get_all until a memory with a new ID appears."""
+        elapsed = 0.0
+        while elapsed < _POLL_TIMEOUT:
+            await asyncio.sleep(_POLL_INTERVAL)
+            elapsed += _POLL_INTERVAL
+            facts = await self.get_all(user_id=user_id, agent_id=agent_id)
+            for fact in facts:
+                if fact.id not in existing_ids:
+                    return fact
+        raise TimeoutError(
+            f"Mem0 did not finish processing within {_POLL_TIMEOUT}s"
+        )
 
     async def get(self, *, fact_id: str) -> Fact:
         try:

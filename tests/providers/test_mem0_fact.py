@@ -36,6 +36,26 @@ class TestMem0FactAdapter:
         assert fact.content == "likes coffee"
         mock_client.add.assert_called_once()
 
+    async def test_add_cloud_polls_until_ready(self):
+        mock_client = AsyncMock()
+        # Cloud add returns PENDING with no id
+        mock_client.add.return_value = {
+            "results": [{"status": "PENDING", "event_id": "evt-1", "id": None, "memory": None}]
+        }
+        ready_result = {"results": [{"id": "real-1", "memory": "User likes coffee", "user_id": "u1"}]}
+        # First call: snapshot (empty), second: poll (empty), third: poll (ready)
+        mock_client.get_all.side_effect = [
+            {"results": []},
+            {"results": []},
+            ready_result,
+        ]
+        adapter = self._make_adapter(mock_client, is_cloud=True)
+
+        fact = await adapter.add(content="likes coffee", user_id="u1")
+
+        assert fact.id == "real-1"
+        assert fact.content == "User likes coffee"
+
     async def test_get(self):
         mock_client = AsyncMock()
         mock_client.get.return_value = {

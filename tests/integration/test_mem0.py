@@ -21,9 +21,8 @@ def _unique(prefix: str) -> str:
 
 
 class TestMem0FactIntegration:
-    """Mem0 Cloud processes memories asynchronously, so we cannot use the
-    generic fact_store_conformance helper (which assumes synchronous CRUD).
-    Instead we test each operation with polling where needed.
+    """Mem0 Cloud processes memories asynchronously. The adapter polls
+    internally on ``add`` so callers always get a usable Fact back.
     """
 
     async def test_add_search_get_update_delete(self, mem0_api_key):
@@ -31,46 +30,36 @@ class TestMem0FactIntegration:
 
         adapter = Mem0FactAdapter(api_key=mem0_api_key)
         user = "test-user-integration"
-        unique_content = _unique("likes coffee")
 
         # Clean up from any previous run
         await adapter.delete_all(user_id=user)
         await asyncio.sleep(2)
 
-        # --- add (async processing) ---
-        fact = await adapter.add(content=unique_content, user_id=user)
+        # --- add (polls internally until ready) ---
+        fact = await adapter.add(content=_unique("likes coffee"), user_id=user)
         assert isinstance(fact, Fact)
         assert fact.id is not None
-
-        # Poll until the memory appears (async processing)
-        real_id = None
-        for _ in range(20):
-            await asyncio.sleep(2)
-            all_facts = await adapter.get_all(user_id=user)
-            if all_facts:
-                real_id = all_facts[0].id
-                break
-        assert real_id is not None, "memory never appeared after add"
+        assert "coffee" in fact.content.lower()
 
         # --- get ---
-        retrieved = await adapter.get(fact_id=real_id)
-        assert retrieved.id == real_id
+        retrieved = await adapter.get(fact_id=fact.id)
+        assert retrieved.id == fact.id
         assert "coffee" in retrieved.content.lower()
 
         # --- search ---
         results = await adapter.search(query="coffee", user_id=user)
         assert isinstance(results, list)
-        assert any(f.id == real_id for f in results)
+        assert any(f.id == fact.id for f in results)
 
         # --- update ---
-        updated = await adapter.update(fact_id=real_id, content="likes tea")
+        updated = await adapter.update(fact_id=fact.id, content="likes tea")
         assert "tea" in updated.content.lower()
 
         # --- delete ---
-        await adapter.delete(fact_id=real_id)
+        await adapter.delete(fact_id=fact.id)
         await asyncio.sleep(2)
         after_delete = await adapter.search(query="tea", user_id=user)
-        assert all(f.id != real_id for f in after_delete)
+        assert all(f.id != fact.id for f in after_delete)
 
     async def test_delete_all(self, mem0_api_key):
         from memio.providers.mem0 import Mem0FactAdapter
@@ -79,16 +68,14 @@ class TestMem0FactIntegration:
         user = "test-user-bulk"
 
         await adapter.delete_all(user_id=user)
+        await asyncio.sleep(2)
 
-        await adapter.add(content=_unique("bulk fact one"), user_id=user)
-        await adapter.add(content=_unique("bulk fact two"), user_id=user)
+        # Use very distinct content to avoid Mem0 deduplication
+        await adapter.add(content=_unique("enjoys swimming in the ocean"), user_id=user)
+        await adapter.add(content=_unique("studies astrophysics at university"), user_id=user)
 
-        # Wait for async processing
-        for _ in range(15):
-            await asyncio.sleep(2)
-            all_facts = await adapter.get_all(user_id=user)
-            if len(all_facts) >= 2:
-                break
+        all_facts = await adapter.get_all(user_id=user)
+        assert len(all_facts) >= 2
 
         # Delete all and retry — async processing may create stragglers
         for _ in range(3):
