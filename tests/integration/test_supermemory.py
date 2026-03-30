@@ -47,12 +47,17 @@ class TestSupermemoryDocumentIntegration:
 
         # Supermemory processes documents asynchronously; wait for
         # processing to finish before deleting (409 otherwise).
+        last_status = None
         for _ in range(30):
             raw = await adapter._client.documents.get(doc.id)
             if raw.status == "done":
                 break
+            last_status = raw.status
             await asyncio.sleep(1)
         else:
-            pytest.skip("Supermemory document processing did not complete within timeout")
+            pytest.skip(
+                f"Supermemory document processing did not complete within timeout "
+                f"(last status: {last_status!r})"
+            )
 
         await adapter.delete(doc_id=doc.id)

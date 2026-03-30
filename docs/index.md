@@ -69,12 +69,12 @@ asyncio.run(main())
 
 memio defines four memory store protocols. Each provider implements one or more:
 
-| Store | Purpose | Mem0 | Zep | Chroma | Qdrant |
-|-------|---------|------|-----|--------|--------|
-| `FactStore` | Structured facts about users/agents | yes | yes | -- | -- |
-| `HistoryStore` | Conversation message history | -- | yes | -- | -- |
-| `DocumentStore` | Document storage with semantic search | -- | -- | yes | yes |
-| `GraphStore` | Knowledge graph triples | yes | yes | -- | -- |
+| Store | Purpose | Mem0 | Zep | Chroma | Qdrant | Letta | Supermemory |
+|-------|---------|------|-----|--------|--------|-------|-------------|
+| `FactStore` | Structured facts about users/agents | yes | yes | -- | -- | yes | yes |
+| `HistoryStore` | Conversation message history | -- | yes | -- | -- | yes | -- |
+| `DocumentStore` | Document storage with semantic search | -- | -- | yes | yes | yes | yes |
+| `GraphStore` | Knowledge graph triples | yes | yes | -- | -- | -- | -- |
 
 ## Next steps
 
