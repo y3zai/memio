@@ -2,6 +2,12 @@
 
 Uses qdrant-client's fastembed integration for automatic embedding generation.
 Supports in-memory, on-disk, and cloud deployments.
+
+Note: Uses qdrant-client's ``add()`` and ``query()`` convenience methods which
+handle embedding automatically. These are deprecated in 1.17 in favor of
+``upsert()``/``query_points()`` with ``models.Document``, but the new API
+requires manual collection creation and UUID-only IDs. We'll migrate when the
+old API is actually removed.
 """
 from __future__ import annotations
 
