@@ -44,11 +44,12 @@ Integration tests are excluded automatically (see `addopts` in
 
 ### Integration Tests
 
-Integration tests hit real provider APIs. Set the required environment
-variables and select the `integration` marker:
+Integration tests hit real provider APIs. Put `OPENAI_API_KEY`,
+`MEM0_API_KEY`, and `ZEP_API_KEY` in a repo-root `.env`, then select the
+`integration` marker:
 
 ```bash
-MEM0_API_KEY=... ZEP_API_KEY=... pytest -m integration -v
+pytest -m integration -v
 ```
 
 Chroma integration tests use a local ephemeral client and do not require
