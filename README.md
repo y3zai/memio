@@ -191,10 +191,12 @@ client = Memio(documents=MyDocumentStore())
 All provider errors are wrapped in `ProviderError`:
 
 ```python
-from memio import ProviderError, MemioError
+from memio import ProviderError, NotSupportedError, MemioError
 
 try:
-    await client.facts.search(query="test", user_id="alice")
+    await client.facts.delete(fact_id="123")
+except NotSupportedError as e:
+    print(e.hint)        # "use delete_all"
 except ProviderError as e:
     print(e.provider)    # "mem0", "zep", etc.
     print(e.operation)   # "search", "add", etc.
@@ -203,6 +205,8 @@ except MemioError:
     # base class for all memio errors
     ...
 ```
+
+`NotSupportedError` is a subclass of `ProviderError`, raised when a provider doesn't support a specific operation (e.g., individual delete on Zep). It includes an optional `hint` suggesting what to do instead. Unlike other `ProviderError` subclasses, its `cause` is a `NotImplementedError` (not an underlying SDK exception).
 
 ## Provider notes
 

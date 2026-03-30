@@ -24,6 +24,8 @@ class Mem0GraphAdapter:
                 "mem0 provider requires mem0ai: pip install memio[mem0]"
             )
         kwargs = {}
+        if api_key:
+            kwargs["api_key"] = api_key
         if config:
             kwargs["config"] = config
         client = AsyncMemory(**kwargs)
@@ -110,7 +112,7 @@ class Mem0GraphAdapter:
         entity: str | None = None,
         triple_id: str | None = None,
     ) -> None:
-        raise NotSupportedError("mem0", "delete")
+        raise NotSupportedError("mem0", "delete", hint="use delete_all")
 
     async def delete_all(self, *, user_id: str | None = None) -> None:
         try:

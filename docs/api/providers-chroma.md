@@ -1,3 +1,3 @@
-# Chroma Providers
+# Chroma Adapters
 
 ::: memio.providers.chroma.ChromaDocumentAdapter

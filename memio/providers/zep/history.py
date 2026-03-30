@@ -105,6 +105,8 @@ class ZepHistoryAdapter:
                     ))
             return results[:limit]
         except Exception as e:
+            if "not found" in str(e).lower() or "404" in str(e):
+                return []
             raise ProviderError("zep", "search", e) from e
 
     async def delete(self, *, session_id: str) -> None:

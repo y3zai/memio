@@ -29,6 +29,8 @@ class Mem0FactAdapter:
                 "mem0 provider requires mem0ai: pip install memio[mem0]"
             )
         kwargs = {}
+        if api_key:
+            kwargs["api_key"] = api_key
         if config:
             kwargs["config"] = config
         self._client = AsyncMemory(**kwargs)
