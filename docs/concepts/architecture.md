@@ -92,12 +92,12 @@ accessing an omitted store attribute returns `None`.
 
 ### Provider support matrix
 
-| Store | Mem0 | Zep | Chroma |
-|---|---|---|---|
-| FactStore | Mem0FactAdapter | ZepFactAdapter | -- |
-| HistoryStore | -- | ZepHistoryAdapter | -- |
-| DocumentStore | -- | -- | ChromaDocumentAdapter |
-| GraphStore | Mem0GraphAdapter | ZepGraphAdapter | -- |
+| Store | Mem0 | Zep | Chroma | Supermemory |
+|---|---|---|---|---|
+| FactStore | Mem0FactAdapter | ZepFactAdapter | -- | SupermemoryFactAdapter |
+| HistoryStore | -- | ZepHistoryAdapter | -- | -- |
+| DocumentStore | -- | -- | ChromaDocumentAdapter | SupermemoryDocumentAdapter |
+| GraphStore | Mem0GraphAdapter | ZepGraphAdapter | -- | -- |
 
 ## Error handling
 
@@ -116,7 +116,7 @@ except ProviderError as e:
 
 `ProviderError` always carries three attributes:
 
-- **`provider`** -- the name of the provider (`"mem0"`, `"zep"`, `"chroma"`).
+- **`provider`** -- the name of the provider (`"mem0"`, `"zep"`, `"chroma"`, `"supermemory"`).
 - **`operation`** -- the protocol method that failed (`"add"`, `"search"`, etc.).
 - **`cause`** -- the original exception from the provider SDK.
 

@@ -6,7 +6,7 @@
 
 Unified memory gateway for AI agents. One interface, multiple memory providers.
 
-memio lets you swap between memory backends (Mem0, Zep, Chroma, Letta, Qdrant) without changing your application code. Define what memory capabilities you need — facts, conversation history, documents, knowledge graphs — and plug in any supported provider.
+memio lets you swap between memory backends (Mem0, Zep, Chroma, Letta, Qdrant, Supermemory) without changing your application code. Define what memory capabilities you need — facts, conversation history, documents, knowledge graphs — and plug in any supported provider.
 
 ## Features
 
@@ -26,12 +26,13 @@ pip install memio
 Install with providers:
 
 ```bash
-pip install memio[mem0]      # Mem0 provider
-pip install memio[zep]       # Zep provider
-pip install memio[chroma]    # Chroma provider
-pip install memio[letta]     # Letta provider
-pip install memio[qdrant]    # Qdrant provider
-pip install memio[all]       # All providers
+pip install memio[mem0]          # Mem0 provider
+pip install memio[zep]           # Zep provider
+pip install memio[chroma]        # Chroma provider
+pip install memio[letta]         # Letta provider
+pip install memio[qdrant]        # Qdrant provider
+pip install memio[supermemory]   # Supermemory provider
+pip install memio[all]           # All providers
 ```
 
 ## Quick start
@@ -77,12 +78,12 @@ results = await client.documents.search(query="memory")
 
 memio defines four memory store protocols. Each provider implements one or more:
 
-| Store | Purpose | Mem0 | Zep | Chroma | Letta | Qdrant |
-|-------|---------|------|-----|--------|-------|--------|
-| `FactStore` | Structured facts about users/agents | yes | yes | - | yes | - |
-| `HistoryStore` | Conversation message history | - | yes | - | yes | - |
-| `DocumentStore` | Document storage with semantic search | - | - | yes | yes |
-| `GraphStore` | Knowledge graph triples | yes | yes | - | - |
+| Store | Purpose | Mem0 | Zep | Chroma | Letta | Qdrant | Supermemory |
+|-------|---------|------|-----|--------|-------|--------|-------------|
+| `FactStore` | Structured facts about users/agents | yes | yes | - | yes | - | yes |
+| `HistoryStore` | Conversation message history | - | yes | - | yes | - | - |
+| `DocumentStore` | Document storage with semantic search | - | - | yes | yes | yes | yes |
+| `GraphStore` | Knowledge graph triples | yes | yes | - | - | - | - |
 
 ### FactStore
 
@@ -233,6 +234,8 @@ client = Memio(
 
 **Qdrant** — uses qdrant-client with built-in fastembed for automatic embeddings. Supports in-memory, on-disk, and Qdrant Cloud deployments. No API key required for local usage.
 
+**Supermemory** — cloud-hosted memory API. Content is auto-processed by an LLM for fact extraction. `get()` and `delete_all()` on FactStore are not supported. Documents are processed asynchronously after `add()`.
+
 ## Development
 
 ```bash
@@ -244,7 +247,7 @@ pip install -e ".[all,dev]"
 # Run unit tests
 pytest
 
-# Put OPENAI_API_KEY, MEM0_API_KEY, and ZEP_API_KEY in .env, then run integration tests
+# Put OPENAI_API_KEY, MEM0_API_KEY, ZEP_API_KEY, and SUPERMEMORY_API_KEY in .env, then run integration tests
 pytest -m integration -v
 ```
 

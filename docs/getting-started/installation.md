@@ -58,6 +58,14 @@ Each memory provider is an optional extra. Install only what you need:
 
     Installs `qdrant-client[fastembed]`. Runs locally with no API key required.
 
+=== "Supermemory"
+
+    ```bash
+    pip install memio[supermemory]
+    ```
+
+    Installs `supermemory`. Requires a Supermemory API key.
+
 === "All providers"
 
     ```bash
@@ -99,6 +107,7 @@ python -c "from memio.providers.mem0 import Mem0FactAdapter; print('mem0 ready')
 python -c "from memio.providers.zep import ZepHistoryAdapter; print('zep ready')"
 python -c "from memio.providers.letta import LettaFactAdapter; print('letta ready')"
 python -c "from memio.providers.qdrant import QdrantDocumentAdapter; print('qdrant ready')"
+python -c "from memio.providers.supermemory import SupermemoryFactAdapter; print('supermemory ready')"
 ```
 
 ## Next steps
