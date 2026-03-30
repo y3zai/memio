@@ -155,7 +155,7 @@ class ZepGraphAdapter:
         entity: str | None = None,
         triple_id: str | None = None,
     ) -> None:
-        raise NotSupportedError("zep", "delete")
+        raise NotSupportedError("zep", "delete", hint="use delete_all")
 
     async def delete_all(self, *, user_id: str | None = None) -> None:
         try:

@@ -25,9 +25,17 @@ class NotSupportedError(ProviderError):
     Attributes:
         provider: Name of the provider (e.g. "mem0", "zep").
         operation: Name of the unsupported operation (e.g. "delete").
+        hint: Optional guidance on what to do instead (e.g. "use delete_all").
     """
 
-    def __init__(self, provider: str, operation: str):
-        super().__init__(provider, operation, NotImplementedError(
-            f"{provider} does not support {operation}"
-        ))
+    def __init__(self, provider: str, operation: str, hint: str = ""):
+        self.provider = provider
+        self.operation = operation
+        self.hint = hint
+        self.cause = None
+
+        message = f"[{provider}] {operation} is not supported"
+        if hint:
+            message += f": {hint}"
+
+        MemioError.__init__(self, message)

@@ -137,7 +137,7 @@ class ZepFactAdapter:
             raise ProviderError("zep", "update", e) from e
 
     async def delete(self, *, fact_id: str) -> None:
-        raise NotSupportedError("zep", "delete")
+        raise NotSupportedError("zep", "delete", hint="use delete_all")
 
     async def delete_all(
         self,

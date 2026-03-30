@@ -43,12 +43,16 @@ class TestNotSupportedError:
         e = NotSupportedError(provider="zep", operation="delete")
         assert e.provider == "zep"
         assert e.operation == "delete"
-        assert isinstance(e.cause, NotImplementedError)
+        assert e.cause is None
 
     def test_message_format(self):
         e = NotSupportedError(provider="mem0", operation="delete")
-        assert "mem0" in str(e)
-        assert "delete" in str(e)
+        assert str(e) == "[mem0] delete is not supported"
+
+    def test_message_with_hint(self):
+        e = NotSupportedError(provider="zep", operation="delete", hint="use delete_all")
+        assert str(e) == "[zep] delete is not supported: use delete_all"
+        assert e.hint == "use delete_all"
 
     def test_can_be_caught_as_provider_error(self):
         e = NotSupportedError(provider="zep", operation="delete")
