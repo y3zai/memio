@@ -163,7 +163,7 @@ class LettaHistoryAdapter:
                     sid for sid, uid in self._session_owners.items()
                     if uid == user_id
                 ][:limit]
-            return list(self._sessions.keys())[:limit]
+            return list(self._sessions)[:limit]
         except Exception as e:
             raise ProviderError("letta", "get_all", e) from e
 

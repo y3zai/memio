@@ -186,10 +186,10 @@ _register("chroma", "documents", _build_chroma_document)
 # ── Letta ──
 
 
-def _build_letta_fact(cfg: dict) -> Any:
+def _build_letta_adapter(cfg: dict, class_name: str) -> Any:
     if "agent_id" not in cfg:
         raise ValueError("Letta provider requires 'agent_id' in config")
-    cls = _lazy_import("memio.providers.letta", "LettaFactAdapter")
+    cls = _lazy_import("memio.providers.letta", class_name)
     return cls(
         agent_id=cfg["agent_id"],
         api_key=cfg.get("api_key"),
@@ -197,31 +197,9 @@ def _build_letta_fact(cfg: dict) -> Any:
     )
 
 
-def _build_letta_history(cfg: dict) -> Any:
-    if "agent_id" not in cfg:
-        raise ValueError("Letta provider requires 'agent_id' in config")
-    cls = _lazy_import("memio.providers.letta", "LettaHistoryAdapter")
-    return cls(
-        agent_id=cfg["agent_id"],
-        api_key=cfg.get("api_key"),
-        base_url=cfg.get("base_url"),
-    )
-
-
-def _build_letta_document(cfg: dict) -> Any:
-    if "agent_id" not in cfg:
-        raise ValueError("Letta provider requires 'agent_id' in config")
-    cls = _lazy_import("memio.providers.letta", "LettaDocumentAdapter")
-    return cls(
-        agent_id=cfg["agent_id"],
-        api_key=cfg.get("api_key"),
-        base_url=cfg.get("base_url"),
-    )
-
-
-_register("letta", "facts", _build_letta_fact)
-_register("letta", "history", _build_letta_history)
-_register("letta", "documents", _build_letta_document)
+_register("letta", "facts", lambda cfg: _build_letta_adapter(cfg, "LettaFactAdapter"))
+_register("letta", "history", lambda cfg: _build_letta_adapter(cfg, "LettaHistoryAdapter"))
+_register("letta", "documents", lambda cfg: _build_letta_adapter(cfg, "LettaDocumentAdapter"))
 
 
 # ── Qdrant ──
