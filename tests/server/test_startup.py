@@ -29,5 +29,5 @@ class TestStartupFailures:
 
     def test_empty_config_raises(self):
         config = ServerConfig(stores={})
-        with pytest.raises(ValueError, match="At least one memory store"):
+        with pytest.raises(ValueError, match="No stores configured"):
             build_memio_from_config(config)

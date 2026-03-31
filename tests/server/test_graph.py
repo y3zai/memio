@@ -48,6 +48,15 @@ class TestGraphEndpoints:
         assert resp.status_code == 200
         assert len(resp.json()["triples"]) == 1
 
+    async def test_delete_triple_by_id(self, client: AsyncClient):
+        await client.post("/v1/graph/triples", json={
+            "triples": [
+                {"subject": "Alice", "predicate": "knows", "object": "Bob"},
+            ],
+        })
+        resp = await client.delete("/v1/graph/triples/some-triple-id")
+        assert resp.status_code == 204
+
     async def test_delete_entity(self, client: AsyncClient):
         await client.post("/v1/graph/triples", json={
             "triples": [

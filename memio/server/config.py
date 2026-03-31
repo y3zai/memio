@@ -264,6 +264,12 @@ _register("supermemory", "documents", _build_supermemory_document)
 
 def build_memio_from_config(config: ServerConfig) -> Memio:
     """Instantiate a Memio client from a ServerConfig."""
+    if not config.stores:
+        raise ValueError(
+            "No stores configured. Add at least one store to your "
+            "memio-server.yaml (or set MEMIO_CONFIG to point to your config file)."
+        )
+
     adapters: dict[str, Any] = {}
 
     for store_type, store_cfg in config.stores.items():
