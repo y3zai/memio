@@ -14,7 +14,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
-from memio.exceptions import ProviderError
+from memio.exceptions import NotFoundError, ProviderError
 from memio.models import Document
 
 
@@ -61,10 +61,14 @@ class QdrantDocumentAdapter:
                 ids=[doc_id],
                 with_payload=True,
             )
+            if not records:
+                raise NotFoundError("document", doc_id)
             payload = records[0].payload
             content = payload["document"]
             metadata = {k: v for k, v in payload.items() if k != "document"} or None
             return Document(id=records[0].id, content=content, metadata=metadata)
+        except (NotFoundError, ProviderError):
+            raise
         except Exception as e:
             raise ProviderError("qdrant", "get", e) from e
 

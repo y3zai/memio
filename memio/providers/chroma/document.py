@@ -4,7 +4,7 @@ import asyncio
 import uuid
 from datetime import datetime, timezone
 
-from memio.exceptions import ProviderError
+from memio.exceptions import NotFoundError, ProviderError
 from memio.models import Document
 
 
@@ -46,11 +46,15 @@ class ChromaDocumentAdapter:
     async def get(self, *, doc_id: str) -> Document:
         try:
             result = await asyncio.to_thread(self._collection.get, ids=[doc_id])
+            if not result["ids"]:
+                raise NotFoundError("document", doc_id)
             return Document(
                 id=result["ids"][0],
                 content=result["documents"][0],
                 metadata=result["metadatas"][0] if result["metadatas"] else None,
             )
+        except (NotFoundError, ProviderError):
+            raise
         except Exception as e:
             raise ProviderError("chroma", "get", e) from e
 

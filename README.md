@@ -33,6 +33,7 @@ pip install memio[letta]         # Letta provider
 pip install memio[qdrant]        # Qdrant provider
 pip install memio[supermemory]   # Supermemory provider
 pip install memio[all]           # All providers
+pip install memio[server]        # REST API server
 ```
 
 ## Quick start
@@ -155,6 +156,55 @@ Triple(subject, predicate, object, metadata)
 # GraphResult — result from graph queries
 GraphResult(triples, nodes, scores)
 ```
+
+## REST API server
+
+Use memio from **any language** (JavaScript, TypeScript, Go, etc.) over HTTP:
+
+```bash
+pip install memio[server,mem0,chroma]
+```
+
+Create `memio-server.yaml`:
+
+```yaml
+stores:
+  facts:
+    provider: mem0
+    config:
+      api_key: "${MEM0_API_KEY}"
+  documents:
+    provider: chroma
+    config:
+      collection_name: "my-docs"
+```
+
+Start the server:
+
+```bash
+memio-server
+# Open http://localhost:8080/docs for interactive API docs
+```
+
+Use from JavaScript:
+
+```javascript
+// Add a fact
+const fact = await fetch("http://localhost:8080/v1/facts", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ content: "likes coffee", user_id: "alice" }),
+}).then(r => r.json());
+
+// Search
+const results = await fetch("http://localhost:8080/v1/facts/search", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ query: "preferences", user_id: "alice" }),
+}).then(r => r.json());
+```
+
+See the [REST API guide](https://y3z.ai/memio/guides/rest-api/) for full endpoint reference, authentication, Docker deployment, and configuration options.
 
 ## Custom providers
 

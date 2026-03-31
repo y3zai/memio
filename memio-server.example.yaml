@@ -1,0 +1,39 @@
+# memio REST API server configuration
+#
+# Copy this file to memio-server.yaml and customize.
+# Override any value with environment variables:
+#   MEMIO_HOST, MEMIO_PORT, MEMIO_API_KEY, MEMIO_CONFIG
+#
+# String values support ${ENV_VAR} interpolation.
+# Unresolved variables cause a startup error.
+
+server:
+  host: "127.0.0.1"   # use 0.0.0.0 only behind TLS + reverse proxy
+  port: 8080
+
+auth:
+  api_key: null        # set a Bearer token, or use MEMIO_API_KEY env var
+
+# Configure one provider per store type.
+# Only configure the stores you need — unconfigured stores return 501.
+stores:
+  facts:
+    provider: mem0
+    config:
+      api_key: "${MEM0_API_KEY}"
+
+  history:
+    provider: zep
+    config:
+      api_key: "${ZEP_API_KEY}"
+
+  documents:
+    provider: chroma
+    config:
+      collection_name: "my-docs"
+      persist_directory: null   # null = in-memory; set a path for persistence
+
+  # graph:
+  #   provider: zep
+  #   config:
+  #     api_key: "${ZEP_API_KEY}"
