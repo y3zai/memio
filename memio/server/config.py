@@ -197,9 +197,21 @@ def _build_letta_adapter(cfg: dict, class_name: str) -> Any:
     )
 
 
-_register("letta", "facts", lambda cfg: _build_letta_adapter(cfg, "LettaFactAdapter"))
-_register("letta", "history", lambda cfg: _build_letta_adapter(cfg, "LettaHistoryAdapter"))
-_register("letta", "documents", lambda cfg: _build_letta_adapter(cfg, "LettaDocumentAdapter"))
+def _build_letta_fact(cfg: dict) -> Any:
+    return _build_letta_adapter(cfg, "LettaFactAdapter")
+
+
+def _build_letta_history(cfg: dict) -> Any:
+    return _build_letta_adapter(cfg, "LettaHistoryAdapter")
+
+
+def _build_letta_document(cfg: dict) -> Any:
+    return _build_letta_adapter(cfg, "LettaDocumentAdapter")
+
+
+_register("letta", "facts", _build_letta_fact)
+_register("letta", "history", _build_letta_history)
+_register("letta", "documents", _build_letta_document)
 
 
 # ── Qdrant ──
